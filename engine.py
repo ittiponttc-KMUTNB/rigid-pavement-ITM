@@ -10,6 +10,9 @@ from io import BytesIO
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+# ── Font: ใช้ DejaVu Sans (built-in) หลีกเลี่ยง Thai fallback □□□ ──
+matplotlib.rcParams['font.family']      = 'DejaVu Sans'
+matplotlib.rcParams['axes.unicode_minus'] = False
 import matplotlib.patches as patches
 
 # ============================================================
