@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from tab1_traffic import render_tab1
 from tab2_subgrade import render_tab2
 from tab3_design import render_tab3
+from tab4_report import render_tab4
 
 # ============================================================
 # CSS
@@ -150,10 +151,11 @@ def main():
     </div>''', unsafe_allow_html=True)
 
     # ── Tabs ─────────────────────────────────────────────────
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         '🚦 Tab 1 — Traffic & ESAL',
         '🪨 Tab 2 — Subgrade & k∞',
         '🏗️ Tab 3 — Design',
+        '📄 Tab 4 — Report',
     ])
 
     with tab1:
@@ -164,6 +166,9 @@ def main():
 
     with tab3:
         render_tab3()
+
+    with tab4:
+        render_tab4()
 
     st.markdown('---')
     st.caption('พัฒนาโดย รศ.ดร.อิทธิพล มีผล · ภาควิชาครุศาสตร์โยธา · มจพ.')
