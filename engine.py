@@ -347,7 +347,7 @@ D_PAIRS = [(10,25),(11,28),(12,30),(13,32),(14,35)]  # (inch, cm)
 def fig_to_bytes(fig):
     from io import BytesIO
     buf = BytesIO()
-    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
+    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', facecolor='white')
     buf.seek(0)
     return buf.read()
 
@@ -357,7 +357,7 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
     x_dsb, y_A, y_B = res['x_dsb'], res['y_A'], res['y_B']
     x_C, y_C, x_D, y_D = res['x_C'], res['y_C'], res['x_D'], res['y_D']
 
-    fig, ax = plt.subplots(figsize=(9,9))
+    fig, ax = plt.subplots(figsize=(5,5))
     fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     ax.set_xlim(0,1); ax.set_ylim(0,1)
     ax.set_xticks([]); ax.set_yticks([])
@@ -421,7 +421,7 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
 
 def plot_f34(k_inf_pci, ls, k_eff_pci):
     """วาด Fig.3.4 พร้อมเส้นแดง"""
-    fig, ax = plt.subplots(figsize=(8,7))
+    fig, ax = plt.subplots(figsize=(5,4))
     fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     ax.set_xscale('log'); ax.set_yscale('log')
     ax.set_xlim(1,2000); ax.set_ylim(1,1000)
@@ -483,7 +483,7 @@ def plot_structure(layers, concrete_cm=None, title='Pavement Structure'):
     min_h = 8
     disp  = [max(l['thickness_cm'], min_h) for l in all_layers]
     tot_d = sum(disp)
-    fig, ax = plt.subplots(figsize=(10,7))
+    fig, ax = plt.subplots(figsize=(5,4))
     w, xc = 3, 6
     xs_left = xc - w/2
     y = tot_d
