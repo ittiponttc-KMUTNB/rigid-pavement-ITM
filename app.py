@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from tab1_traffic import render_tab1
 from tab2_subgrade import render_tab2
+from tab3_design import render_tab3
 
 # ============================================================
 # CSS
@@ -162,7 +163,7 @@ def main():
         render_tab2()
 
     with tab3:
-        st.info('🔧 Tab 3 — Design (Step 4 — coming next)')
+        render_tab3()
 
     st.markdown('---')
     st.caption('พัฒนาโดย รศ.ดร.อิทธิพล มีผล · ภาควิชาครุศาสตร์โยธา · มจพ.')
