@@ -65,9 +65,14 @@ def _end():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def _verdict_bar(d_cm, d_in, w18_cap, w18_req, ratio, passed, bd_color):
-    pct = min(ratio * 100, 200)
+    # track = W18_req (100%) — แสดง 2 segment: req (grey) + cap (สี)
+    # ถ้า passed: cap segment ยาวเต็ม 100% (แสดงว่าผ่าน)
+    # ถ้า failed: cap segment สั้นกว่า (แสดงสัดส่วน cap/req ≤ 100%)
+    pct_cap = min(ratio * 100, 100)   # cap ใน track (0–100%)
     bar_color = '#43A047' if passed else '#E53935'
     label = f'✅ ผ่าน  (×{ratio:.2f})' if passed else f'❌ ไม่ผ่าน  (×{ratio:.2f})'
+    # แสดง ratio text แยกสำหรับ passed เพื่อให้เห็นว่า excess เท่าไหร่
+    ratio_txt = f'+{(ratio-1)*100:.0f}%' if passed else f'{ratio*100:.0f}%'
     st.markdown(
         f'<div style="background:#F5F5F5;border:1px solid {bd_color}33;'
         f'border-radius:8px;padding:8px 10px;margin-bottom:4px">'
@@ -75,12 +80,16 @@ def _verdict_bar(d_cm, d_in, w18_cap, w18_req, ratio, passed, bd_color):
         f'<span style="font-family:IBM Plex Mono,monospace;font-weight:700;color:{bd_color}">'
         f'D = {d_in} in ({d_cm} ซม.)</span>'
         f'<span style="font-weight:700;color:{bar_color}">{label}</span></div>'
-        f'<div style="background:#E0E0E0;border-radius:4px;height:8px">'
-        f'<div style="background:{bar_color};width:{pct:.0f}%;height:8px;border-radius:4px"></div>'
+        f'<div style="position:relative;background:#E0E0E0;border-radius:4px;height:10px">'
+        f'<div style="background:{bar_color};width:{pct_cap:.1f}%;height:10px;border-radius:4px;'
+        f'opacity:0.85"></div>'
+        f'<div style="position:absolute;top:0;left:0;width:100%;height:100%;'
+        f'border-right:2px dashed #9E9E9E;border-radius:4px;pointer-events:none"></div>'
         f'</div>'
         f'<div style="display:flex;justify-content:space-between;font-size:10px;'
         f'color:#90A4AE;margin-top:3px">'
         f'<span>W18_cap = {w18_cap:,.0f}</span>'
+        f'<span style="color:{bar_color};font-weight:600">{ratio_txt} จาก W18_req</span>'
         f'<span>W18_req = {w18_req:,.0f}</span>'
         f'</div></div>',
         unsafe_allow_html=True)
@@ -276,10 +285,10 @@ def _create_word_report(ptype, proj_name, params, rows, sel_d_cm,
 
     # ── 4. ผลเปรียบเทียบ D ────────────────────────────────────
     doc.add_heading('4. ผลการเปรียบเทียบความหนา', level=1)
-    t3 = doc.add_table(rows=1, cols=6)
+    t3 = doc.add_table(rows=1, cols=7)
     t3.style = 'Table Grid'
-    for i, h in enumerate(['D (ซม.)', 'D (นิ้ว)', 'log10(W18)',
-                            'W18 รองรับได้', 'อัตราส่วน', 'ผล']):
+    for i, h in enumerate(['D (ซม.)', 'D (นิ้ว)', 'W18 ต้องการ',
+                            'log10(W18_cap)', 'W18 รองรับได้', 'อัตราส่วน', 'ผล']):
         c = t3.rows[0].cells[i]
         r = c.paragraphs[0].add_run(h)
         r.bold = True; r.font.name = TH; r.font.size = TS
@@ -288,6 +297,7 @@ def _create_word_report(ptype, proj_name, params, rows, sel_d_cm,
         vals = [
             f"{rv['d_cm']}",
             f"{rv['d_inch']}",
+            f"{rv.get('w18_req', params['w18']):,.0f}",
             f"{rv['log_w18']:.4f}",
             f"{rv['w18_cap']:,.0f}",
             f"{rv['ratio']:.3f}",
@@ -330,7 +340,9 @@ def _create_word_report(ptype, proj_name, params, rows, sel_d_cm,
         f"ESAL ที่ต้องการ: {params['w18']:,.0f} ESALs",
     ]
     if sel_row:
+        w18_req_sel = sel_row.get('w18_req', params['w18'])
         summary += [
+            f"ESAL ที่ต้องการ (D={sel_d_cm} ซม.): {w18_req_sel:,.0f} ESALs",
             f"ESAL ที่รองรับได้: {sel_row['w18_cap']:,.0f} ESALs",
             f"อัตราส่วน (capacity/demand): {sel_row['ratio']:.3f}",
             f"ผลการตรวจสอบ: {'ผ่านเกณฑ์' if sel_row['passed'] else 'ไม่ผ่านเกณฑ์'}",
@@ -404,9 +416,33 @@ def _design_block(prefix, ptype, fc_cyl, ec_psi, cd, w18_req, pt, zr, so, bd, bd
         key=f'{prefix}_j',
         format_func=lambda x: f'{x:.1f}')
 
+    # ── คำนวณ W18_req แยกตาม D (EALF ขึ้นกับ D) ─────────────
+    ed = st.session_state.get('esal_data')
+    w18_manual_mode = st.session_state.get('w18_manual_mode', False)
+
+    w18_per_d = {}   # {d_cm: w18_req}
+    if ed and not w18_manual_mode:
+        from engine import compute_esal_for_d
+        for d_in, d_cm in D_PAIRS:
+            w18_d, _, _ = compute_esal_for_d(
+                ed['traffic_data'], pt,
+                ed['lane_factor'], ed['direction_factor'], d_cm)
+            w18_per_d[d_cm] = w18_d
+    else:
+        # manual mode หรือไม่มี JSON — ใช้ค่าเดียวทุก D (conservative)
+        for d_in, d_cm in D_PAIRS:
+            w18_per_d[d_cm] = w18_req
+        st.markdown(
+            '<div style="background:#FFF8E1;border:1px solid #FFD54F;'
+            'border-radius:7px;padding:6px 10px;font-size:11px;color:#E65100;margin-bottom:4px">'
+            '⚠️ W18 กรอกเอง — ใช้ค่าเดียวกันทุก D (conservative) '
+            'เนื่องจากไม่ทราบ D อ้างอิง ผลจะ strict กว่าความเป็นจริงสำหรับ D ขนาดใหญ่'
+            '</div>', unsafe_allow_html=True)
+
     # ── แสดง parameters summary ──────────────────────────────
     st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
-    _row('W18 (required)',  f'{w18_req:,.0f} ESALs')
+    w18_note = 'แยกตาม D' if (ed and not w18_manual_mode) else 'ค่าเดียว (manual)'
+    _row(f'W18 ({w18_note})',  f'{w18_req:,.0f} ESALs (ref D=30)')
     _row('k_eff (Tab 2)',   f'{k_eff:.0f} pci')
     _row("f'c (cylinder)", f"{fc_cyl:.1f} ksc")
     _row('Ec',             f'{ec_psi:,.0f} psi')
@@ -417,16 +453,31 @@ def _design_block(prefix, ptype, fc_cyl, ec_psi, cd, w18_req, pt, zr, so, bd, bd
     _row('ZR / So',        f'{zr:.3f} / {so:.2f}')
     st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
 
-    # ── คำนวณ compare_d ──────────────────────────────────────
-    rows = compare_d(D_PAIRS, dpsi, pt, zr, so,
-                     SC_FIXED, cd, j_val, ec_psi, k_eff, w18_req)
+    # ── คำนวณ compare_d (W18_req แยกตาม D) ──────────────────
+    from engine import calc_w18 as _calc_w18
+    rows = []
+    for d_in, d_cm in D_PAIRS:
+        w18_d  = w18_per_d[d_cm]
+        lw, wc = _calc_w18(d_in, dpsi, pt, zr, so,
+                           SC_FIXED, cd, j_val, ec_psi, k_eff)
+        passed = wc >= w18_d
+        ratio  = round(wc / w18_d, 3) if w18_d > 0 else 0
+        rows.append({
+            'd_cm':    d_cm,
+            'd_inch':  d_in,
+            'log_w18': round(lw, 4),
+            'w18_cap': round(wc, 0),
+            'w18_req': w18_d,
+            'passed':  passed,
+            'ratio':   ratio,
+        })
     st.session_state[f'{prefix}_design_rows'] = rows
 
     # ── Verdict bars ─────────────────────────────────────────
     passed_rows = [r for r in rows if r['passed']]
     for r in rows:
         _verdict_bar(r['d_cm'], r['d_inch'],
-                     r['w18_cap'], w18_req,
+                     r['w18_cap'], r['w18_req'],
                      r['ratio'], r['passed'], bd)
 
     # ── Recommended D ─────────────────────────────────────────
