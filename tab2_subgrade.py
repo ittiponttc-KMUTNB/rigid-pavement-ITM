@@ -200,21 +200,26 @@ def _graphs(prefix, MR_psi):
     layers = st.session_state.get(f'{prefix}_layers', [])
     if res is None: return
 
+    # save Fig.3.3 bytes เสมอ (ใช้ใน Word report Tab 3)
+    fig33 = plot_f33(MR_psi, ESB, DSB, res)
+    st.session_state[f'{prefix}_fig33_bytes'] = fig_to_bytes(fig33)
     if st.session_state.get(f'{prefix}_show_f33'):
-        fig = plot_f33(MR_psi, ESB, DSB, res)
-        st.pyplot(fig, use_container_width=True)
-        st.download_button('⬇️ Fig.3.3', fig_to_bytes(fig),
+        st.pyplot(fig33, use_container_width=True)
+        st.download_button('⬇️ Fig.3.3', st.session_state[f'{prefix}_fig33_bytes'],
                            f'fig33_{prefix}.png','image/png',
                            key=f'dl33_{prefix}')
-        plt.close(fig)
+    plt.close(fig33)
 
-    if ls_val > 0 and st.session_state.get(f'{prefix}_show_f34'):
-        fig = plot_f34(k_inf, ls_val, k_eff)
-        st.pyplot(fig, use_container_width=True)
-        st.download_button('⬇️ Fig.3.4', fig_to_bytes(fig),
-                           f'fig34_{prefix}.png','image/png',
-                           key=f'dl34_{prefix}')
-        plt.close(fig)
+    if ls_val > 0:
+        # save Fig.3.4 bytes เสมอ
+        fig34 = plot_f34(k_inf, ls_val, k_eff)
+        st.session_state[f'{prefix}_fig34_bytes'] = fig_to_bytes(fig34)
+        if st.session_state.get(f'{prefix}_show_f34'):
+            st.pyplot(fig34, use_container_width=True)
+            st.download_button('⬇️ Fig.3.4', st.session_state[f'{prefix}_fig34_bytes'],
+                               f'fig34_{prefix}.png','image/png',
+                               key=f'dl34_{prefix}')
+        plt.close(fig34)
 
     if st.session_state.get(f'{prefix}_show_str') and layers:
         fig = plot_structure(layers)
