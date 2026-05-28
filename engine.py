@@ -399,12 +399,12 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
         ax.plot([x,x],[0.5,0.513],color='black',lw=0.8)
         ax.plot([x,x],[0.5,0.487],color='black',lw=0.8)
         ax.text(x,0.517,str(d),ha='center',va='bottom',fontsize=7)
-    ax.text(0.20,0.545,'Subbase Thickness, $D_{SB}$ (inches)',ha='center',va='bottom',fontsize=8)
-    ax.text(0.47,0.97,'Subbase Elastic\nModulus, $E_{SB}$ (psi)',
+    ax.text(0.20,0.545,'Subbase Thickness, D_SB (inches)',ha='center',va='bottom',fontsize=8)
+    ax.text(0.47,0.97,'Subbase Elastic\nModulus, E_SB (psi)',
             ha='right',va='top',fontsize=8,style='italic',bbox=dict(fc='white',ec='none',pad=1))
-    ax.text(0.98,0.97,'Composite Modulus of\nSubgrade Reaction,\n$k_\\infty$ (pci)',
+    ax.text(0.98,0.97,'Composite Modulus of\nSubgrade Reaction,\nk_inf (pci)',
             ha='right',va='top',fontsize=7,style='italic',bbox=dict(fc='white',ec='none',pad=1))
-    ax.text(0.13,0.05,'Roadbed Soil\nResilient Modulus,\n$M_R$ (psi)',
+    ax.text(0.13,0.05,'Roadbed Soil\nResilient Modulus,\nMR (psi)',
             ha='center',va='bottom',fontsize=8,style='italic',bbox=dict(fc='white',ec='none',pad=1))
 
     ax.plot([x_dsb,x_dsb],[y_A,y_B],'r-',lw=1.8)
@@ -412,12 +412,12 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
     ax.plot([x_dsb,x_C],[y_B,y_C],'r-',lw=1.8)
     ax.plot([x_D,x_C],[y_D,y_C],'r-',lw=1.8)
     ax.plot(x_C,y_C,'ro',markersize=8,zorder=5)
-    ax.annotate(f'$k_\\infty$ = {k_inf:.0f} pci',
+    ax.annotate(f'k_inf = {k_inf:.0f} pci',
                 xy=(x_C,y_C),xytext=(x_C+0.07,y_C-0.06),
                 fontsize=9,color='red',fontweight='bold',
                 arrowprops=dict(arrowstyle='->',color='red',lw=1.2))
-    ax.set_title(f'$M_R$={MR_psi:,.0f} psi   $D_{{SB}}$={DSB_in} in   '
-                 f'$E_{{SB}}$={ESB_psi:,.0f} psi   →   $k_\\infty$ = {k_inf:.0f} pci',
+    ax.set_title(f'MR={MR_psi:,.0f} psi   DSB={DSB_in} in   '
+                 f'ESB={ESB_psi:,.0f} psi   ->   k_inf={k_inf:.0f} pci',
                  fontsize=9,color='red')
     plt.tight_layout()
     return fig
@@ -476,44 +476,82 @@ def plot_f34(k_inf_pci, ls, k_eff_pci):
     return fig
 
 def plot_structure(layers, concrete_cm=None, title='Pavement Structure'):
-    """วาดรูปโครงสร้างชั้นทาง"""
+    """วาดรูปโครงสร้างชั้นทาง — สัดส่วนตาม thickness จริง"""
     all_layers = []
     if concrete_cm and concrete_cm > 0:
         all_layers.append({'name':'Concrete Slab','thickness_cm':concrete_cm,'E_MPa':None})
     all_layers.extend([l for l in layers if l.get('thickness_cm',0) > 0])
     if not all_layers: return None
+
     total = sum(l['thickness_cm'] for l in all_layers)
-    min_h = 8
-    disp  = [max(l['thickness_cm'], min_h) for l in all_layers]
-    tot_d = sum(disp)
-    fig, ax = plt.subplots(figsize=(5,4))
+    thicks = [l['thickness_cm'] for l in all_layers]
+
+    # scale proportional — draw height = actual thickness (cm as unit)
+    # แต่ถ้า layer얇มากให้มี minimum display เพื่อ label อ่านออก
+    # minimum = 8% ของ total หรือ 5 cm อย่างใดมากกว่า
+    min_disp = max(total * 0.08, 5)
+    disp = []
+    for t in thicks:
+        disp.append(max(t, min_disp) if t < min_disp else t)
+
+    # normalize ให้ tot_d = total จริง (ปรับ scale ที่ขยาย)
+    tot_disp = sum(disp)
+    scale = total / tot_disp   # < 1 ถ้ามี layer얇ถูก inflate
+    disp_scaled = [d * scale for d in disp]  # รวมยังคง = total
+
+    tot_d = sum(disp_scaled)   # = total เสมอ
+
+    # figure height proportional to total thickness
+    fig_h = max(4, min(8, total / 15))
+    fig, ax = plt.subplots(figsize=(6, fig_h))
+    fig.patch.set_facecolor('white'); ax.set_facecolor('white')
+
     w, xc = 3, 6
     xs_left = xc - w/2
     y = tot_d
+
     dark_layers = {"รองผิวทางคอนกรีตด้วย AC","รองผิวทางคอนกรีตด้วย PMA(AC)",
                    "Concrete Slab","หินคลุกปรับปรุงคุณภาพด้วยปูนซีเมนต์ (CTB)",
                    "หินคลุกผสมซีเมนต์ UCS 24.5 ksc","วัสดุหมุนเวียน (Recycling)"}
+
     for i, layer in enumerate(all_layers):
-        t=layer['thickness_cm']; n=layer['name']; e=layer.get('E_MPa')
-        dh=disp[i]; yb=y-dh
-        col=LAYER_COLORS.get(n,'#CCCCCC')
-        ax.add_patch(patches.Rectangle((xs_left,yb),w,dh,lw=2,ec='black',fc=col))
-        yc=yb+dh/2
-        en=LAYER_NAMES_EN.get(n,n)
-        tc='white' if n in dark_layers else 'black'
-        ax.text(xc,yc,f'{t} cm',ha='center',va='center',fontsize=14,fontweight='bold',color=tc)
-        ax.text(xs_left-0.4,yc,en,ha='right',va='center',fontsize=12,fontweight='bold')
+        t  = layer['thickness_cm']
+        n  = layer['name']
+        e  = layer.get('E_MPa')
+        dh = disp_scaled[i]
+        yb = y - dh
+        col= LAYER_COLORS.get(n,'#CCCCCC')
+        ax.add_patch(patches.Rectangle((xs_left,yb),w,dh,lw=1.5,ec='black',fc=col))
+        yc = yb + dh/2
+        en = LAYER_NAMES_EN.get(n,n)
+        tc = 'white' if n in dark_layers else 'black'
+
+        # font size ตาม display height
+        fs_val  = max(8, min(14, dh * 0.55))
+        fs_lbl  = max(7, min(12, dh * 0.45))
+
+        ax.text(xc, yc, f'{t} cm',
+                ha='center', va='center',
+                fontsize=fs_val, fontweight='bold', color=tc)
+        ax.text(xs_left-0.3, yc, en,
+                ha='right', va='center',
+                fontsize=fs_lbl, fontweight='bold')
         if e:
-            ax.text(xs_left+w+0.4,yc,f'E = {e:,} MPa',
-                    ha='left',va='center',fontsize=11,color='#0066CC')
+            ax.text(xs_left+w+0.3, yc, f'E = {e:,} MPa',
+                    ha='left', va='center',
+                    fontsize=max(7, fs_lbl-1), color='#0066CC')
         y = yb
-    ax.annotate('',xy=(xs_left+w+3.5,tot_d),xytext=(xs_left+w+3.5,0),
+
+    # arrow total
+    ax.annotate('', xy=(xs_left+w+3.2, tot_d), xytext=(xs_left+w+3.2, 0),
                 arrowprops=dict(arrowstyle='<->',color='red',lw=2))
-    ax.text(xs_left+w+4,tot_d/2,f'Total\n{total} cm',
-            ha='left',va='center',fontsize=13,color='red',fontweight='bold')
-    mg = 10
-    ax.set_xlim(0,14); ax.set_ylim(-mg, tot_d+mg)
+    ax.text(xs_left+w+3.7, tot_d/2, 'Total\n' + str(total) + ' cm',
+            ha='left', va='center', fontsize=11, color='red', fontweight='bold')
+
+    mg = total * 0.08
+    ax.set_xlim(0, 14)
+    ax.set_ylim(-mg, tot_d + mg)
     ax.axis('off')
-    ax.set_title(title,fontsize=16,fontweight='bold',pad=16)
+    ax.set_title(title, fontsize=14, fontweight='bold', pad=12)
     plt.tight_layout()
     return fig
