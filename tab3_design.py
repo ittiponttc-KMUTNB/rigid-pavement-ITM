@@ -134,7 +134,8 @@ def _kopt_box(prefix, rec_d_cm, k_opt, k_eff, bd):
 # Word Report
 # ============================================================
 def _create_word_report(ptype, proj_name, params, rows, sel_d_cm,
-                        struct_fig_bytes, date_str):
+                        struct_fig_bytes, date_str,
+                        fig33_bytes=None, fig34_bytes=None):
     """สร้าง Word report — TH SarabunPSK + Times New Roman (เหมือน V6)"""
     try:
         from docx import Document
@@ -351,10 +352,26 @@ def _create_word_report(ptype, proj_name, params, rows, sel_d_cm,
         p = doc.add_paragraph(txt)
         p.runs[0].font.name = TH; p.runs[0].font.size = TS
 
+    # ── Fig 3.3 ──────────────────────────────────────────────
+    if fig33_bytes:
+        doc.add_heading('7. AASHTO Figure 3.3 — Composite k_inf', level=1)
+        p = doc.add_paragraph('ผลการหาค่า Composite Modulus of Subgrade Reaction (k_inf) จาก Nomograph:')
+        p.runs[0].font.name = TH; p.runs[0].font.size = TS
+        doc.add_picture(BytesIO(fig33_bytes), width=Inches(5.0))
+        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # ── Fig 3.4 ──────────────────────────────────────────────
+    if fig34_bytes:
+        doc.add_heading('8. AASHTO Figure 3.4 — Loss of Support', level=1)
+        p = doc.add_paragraph('ผลการปรับแก้ k_eff ตาม Loss of Support (LS):')
+        p.runs[0].font.name = TH; p.runs[0].font.size = TS
+        doc.add_picture(BytesIO(fig34_bytes), width=Inches(5.0))
+        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
     # ── รูปโครงสร้าง ─────────────────────────────────────────
     if struct_fig_bytes:
-        doc.add_paragraph()
-        p = doc.add_paragraph('รูปตัดโครงสร้างชั้นทาง:')
+        doc.add_heading('9. รูปตัดโครงสร้างชั้นทาง', level=1)
+        p = doc.add_paragraph('รูปตัดโครงสร้างชั้นทางที่ออกแบบ:')
         p.runs[0].font.name = TH; p.runs[0].font.size = TS
         doc.add_picture(BytesIO(struct_fig_bytes), width=Inches(5.5))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -731,46 +748,52 @@ def render_tab3():
     proj_name = st.session_state.get('project_name', '')
 
     rc1, rc2 = st.columns(2)
-    with rc1:
-        can_j = (res_j is not None and
-                 st.session_state.get('jpcp_design_rows') is not None)
-        if can_j:
+
+    def _export_btn(prefix, ptype, res, key):
+        """สร้าง word report และแสดงปุ่ม download — จัดการ error ชัดเจน"""
+        rows_key  = f'{prefix}_design_rows'
+        params_key= f'{prefix}_design_params'
+        rec_key   = f'{prefix}_rec_d_cm'
+        sbytes_key= f'{prefix}_struct_bytes'
+
+        if res is None or st.session_state.get(rows_key) is None:
+            st.markdown(
+                '<div style="background:#F5F5F5;border:1px solid #E0E0E0;'
+                'border-radius:8px;padding:8px 12px;font-size:12px;color:#90A4AE;'
+                'text-align:center">'
+                f'📋 คำนวณ {ptype} ก่อนเพื่อ export</div>',
+                unsafe_allow_html=True)
+            return
+
+        try:
             buf = _create_word_report(
-                'JPCP/JRCP', proj_name,
-                st.session_state.get('jpcp_design_params', {}),
-                st.session_state.get('jpcp_design_rows', []),
-                st.session_state.get('jpcp_rec_d_cm') or 30,
-                st.session_state.get('jpcp_struct_bytes'),
-                date_str)
-            if buf:
-                st.download_button(
-                    '📥 Report JPCP/JRCP (.docx)', buf,
-                    f'Report_JPCP_{datetime.now().strftime("%Y%m%d_%H%M")}.docx',
-                    'application/vnd.openxmlformats-officedocument'
-                    '.wordprocessingml.document',
-                    key='dl_word_j', use_container_width=True)
-        else:
-            st.info('คำนวณ JPCP ก่อนเพื่อ export report')
+                ptype, proj_name,
+                st.session_state.get(params_key, {}),
+                st.session_state.get(rows_key, []),
+                st.session_state.get(rec_key) or 30,
+                st.session_state.get(sbytes_key),
+                date_str,
+                fig33_bytes=st.session_state.get(f'{prefix}_fig33_bytes'),
+                fig34_bytes=st.session_state.get(f'{prefix}_fig34_bytes'))
+        except Exception as e:
+            st.error(f'❌ สร้างรายงานไม่สำเร็จ: {e}')
+            return
+
+        if buf is None:
+            st.error('❌ ไม่พบ python-docx — กรุณาเพิ่ม python-docx ใน requirements.txt')
+            return
+
+        fname = f'Report_{prefix.upper()}_{datetime.now().strftime("%Y%m%d_%H%M")}.docx'
+        st.download_button(
+            f'📥 Report {ptype} (.docx)', buf, fname,
+            'application/vnd.openxmlformats-officedocument'
+            '.wordprocessingml.document',
+            key=key, use_container_width=True)
+
+    with rc1:
+        _export_btn('jpcp', 'JPCP/JRCP', res_j, 'dl_word_j')
 
     with rc2:
-        can_c = (res_c is not None and
-                 st.session_state.get('crcp_design_rows') is not None)
-        if can_c:
-            buf = _create_word_report(
-                'CRCP', proj_name,
-                st.session_state.get('crcp_design_params', {}),
-                st.session_state.get('crcp_design_rows', []),
-                st.session_state.get('crcp_rec_d_cm') or 30,
-                st.session_state.get('crcp_struct_bytes'),
-                date_str)
-            if buf:
-                st.download_button(
-                    '📥 Report CRCP (.docx)', buf,
-                    f'Report_CRCP_{datetime.now().strftime("%Y%m%d_%H%M")}.docx',
-                    'application/vnd.openxmlformats-officedocument'
-                    '.wordprocessingml.document',
-                    key='dl_word_c', use_container_width=True)
-        else:
-            st.info('คำนวณ CRCP ก่อนเพื่อ export report')
+        _export_btn('crcp', 'CRCP', res_c, 'dl_word_c')
 
     st.markdown('</div>', unsafe_allow_html=True)
