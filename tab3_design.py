@@ -416,7 +416,7 @@ def _design_block(prefix, ptype, fc_cyl, ec_psi, cd, w18_req, pt, zr, so, bd, bd
     w18_note = 'แยกตาม D' if (ed and not w18_manual_mode) else 'ค่าเดียว (manual)'
     _row(f'W18 ({w18_note})', f'{w18_req:,.0f} ESALs (ref D=30)')
     _row('k_eff (Tab 2)',  f'{k_eff:.0f} pci')
-    _row("f'c (cylinder)", f"{fc_cyl:.1f} ksc")
+    _row("f'c (cube)", f"{st.session_state.get('fc_cube', fc_cube):.0f} ksc")
     _row('Ec',             f'{ec_psi:,.0f} psi')
     _row('Sc (ทล. lock)', f'{SC_FIXED:.0f} psi')
     _row('J',              f'{j_val:.1f}', hi=True)
@@ -599,10 +599,10 @@ def render_tab3():
             st.markdown(
                 f'<div style="background:{_JPCP_BG};border:1px solid {_JPCP_BDLT};'
                 f'border-radius:8px;padding:8px;text-align:center;margin-top:4px">'
-                f'<div style="font-size:10px;color:#78909C">f\'c,cyl = 0.8 × f\'c,cube</div>'
+                f'<div style="font-size:10px;color:#78909C">f\'c,cyl = 0.8 × f\'c,cube = {fc_cyl:.0f} ksc</div>'
                 f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;'
-                f'font-weight:700;color:{_JPCP_BD}">{fc_cyl:.0f} ksc</div>'
-                f'<div style="font-size:10px;color:#78909C">Ec = {ec_psi:,.0f} psi</div></div>',
+                f'font-weight:700;color:{_JPCP_BD}">{ec_psi:,.0f} psi</div>'
+                f'<div style="font-size:10px;color:#78909C">Modulus of Elasticity (Ec)</div></div>',
                 unsafe_allow_html=True)
         with c3:
             st.markdown(
@@ -614,13 +614,18 @@ def render_tab3():
                 f'<div style="font-size:10px;color:#78909C">Modulus of Rupture</div></div>',
                 unsafe_allow_html=True)
         st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
-        cd = st.select_slider(
-            'Cd — Drainage Coefficient (ใช้ร่วมกัน)',
-            options=[1.0, 1.1, 1.2],
-            value=st.session_state.get('cd', 1.0),
-            key='cd',
-            format_func=lambda x: f'{x:.1f}',
-            help='1.0 = ระบายน้ำปกติ | 1.2 = ระบายน้ำดีมาก')
+        st.markdown('<div style="font-size:12px;color:#546E7A;margin-bottom:2px">'
+                    'Cd — Drainage Coefficient (ใช้ร่วมกัน)</div>',
+                    unsafe_allow_html=True)
+        cd_str = st.radio(
+            'Cd',
+            options=['1.0 — ระบายน้ำปกติ', '1.1 — ระบายน้ำดี', '1.2 — ระบายน้ำดีมาก'],
+            index=[1.0, 1.1, 1.2].index(st.session_state.get('cd', 1.0)),
+            key='cd_radio',
+            horizontal=True,
+            label_visibility='collapsed')
+        cd = float(cd_str.split(' — ')[0])
+        st.session_state['cd'] = cd
 
     # ════════════════════════════════════════════════════════
     # Side-by-side Design (JPCP | CRCP)
