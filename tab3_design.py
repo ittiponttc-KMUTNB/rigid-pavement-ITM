@@ -784,13 +784,14 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         pdf.set_text_color(0, 0, 0)
 
     def tbl_row_shared(label, val):
-        pdf.set_fill_color(255, 255, 255)
+        """shared value — แสดงซ้ำทั้ง 2 column สีเทา"""
+        pdf.set_fill_color(250, 250, 250)
         pdf.set_font('Sarabun', '', 8)
         pdf.set_text_color(84, 110, 122)
         pdf.cell(W_LABEL, 5, f'  {label}', border='B', fill=True)
-        pdf.set_text_color(100, 100, 100)
-        pdf.set_font('Sarabun', '', 8)
-        pdf.cell(W_COL * 2, 5, f'{val}  [ร่วมกัน]', border='B', fill=True, ln=True, align='C')
+        pdf.set_text_color(120, 120, 120)
+        pdf.cell(W_COL, 5, f'  {val}', border='B', fill=True)
+        pdf.cell(W_COL, 5, f'  {val}', border='B', fill=True, ln=True)
         pdf.set_text_color(0, 0, 0)
 
     # ── Comparison Table ─────────────────────────────────────
