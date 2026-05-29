@@ -350,7 +350,7 @@ D_PAIRS = [(10,25),(11,28),(12,30),(13,32),(14,35)]  # (inch, cm)
 def fig_to_bytes(fig):
     from io import BytesIO
     buf = BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
     buf.seek(0)
     return buf.read()
 
@@ -360,7 +360,7 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
     x_dsb, y_A, y_B = res['x_dsb'], res['y_A'], res['y_B']
     x_C, y_C, x_D, y_D = res['x_C'], res['y_C'], res['x_D'], res['y_D']
 
-    fig, ax = plt.subplots(figsize=(5,5))
+    fig, ax = plt.subplots(figsize=(7,7))
     fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     ax.set_xlim(0,1); ax.set_ylim(0,1)
     ax.set_xticks([]); ax.set_yticks([])
@@ -416,22 +416,22 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
                 xy=(x_C,y_C),xytext=(x_C+0.07,y_C-0.06),
                 fontsize=9,color='red',fontweight='bold',
                 arrowprops=dict(arrowstyle='->',color='red',lw=1.2))
-    ax.set_title(f'MR={MR_psi:,.0f} psi   DSB={DSB_in} in   '
-                 f'ESB={ESB_psi:,.0f} psi   ->   k_inf={k_inf:.0f} pci',
-                 fontsize=9,color='red')
+    ax.set_title(f'MR={MR_psi:,.0f} psi    DSB={DSB_in} in\n'
+                 f'ESB={ESB_psi:,.0f} psi   →   k_inf={k_inf:.0f} pci',
+                 fontsize=9,color='red',pad=6)
     plt.tight_layout()
     return fig
 
 def plot_f34(k_inf_pci, ls, k_eff_pci):
     """วาด Fig.3.4 พร้อมเส้นแดง"""
-    fig, ax = plt.subplots(figsize=(5,4))
+    fig, ax = plt.subplots(figsize=(7,6))
     fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     ax.set_xscale('log'); ax.set_yscale('log')
     ax.set_xlim(1,2000); ax.set_ylim(1,1000)
     xticks=[1,2,5,10,20,50,100,200,500,1000,2000]
     yticks=[1,2,5,10,20,50,100,200,500,1000]
-    ax.set_xticks(xticks); ax.set_xticklabels([str(x) for x in xticks],fontsize=8)
-    ax.set_yticks(yticks); ax.set_yticklabels([str(y) for y in yticks],fontsize=8)
+    ax.set_xticks(xticks); ax.set_xticklabels([str(x) for x in xticks],fontsize=10)
+    ax.set_yticks(yticks); ax.set_yticklabels([str(y) for y in yticks],fontsize=10)
     ax.grid(True,which='both',color='#cccccc',lw=0.5)
     ax.grid(True,which='minor',color='#eeeeee',lw=0.3)
 
@@ -442,36 +442,42 @@ def plot_f34(k_inf_pci, ls, k_eff_pci):
         xs=np.logspace(np.log10(x1),np.log10(x2),100)
         f=interp1d(np.log10([x1,x2]),np.log10([y1,y2]),fill_value='extrapolate')
         ys=10**f(np.log10(xs))
-        ax.plot(xs,ys,color=ls_colors[lsi],lw=2.0)
+        ax.plot(xs,ys,color=ls_colors[lsi],lw=2.2)
         xm=lx_mid[lsi]; ym=float(10**f(np.log10(xm)))
         xa=10**(np.log10(xm)-0.3); xb=10**(np.log10(xm)+0.3)
         ya=float(10**f(np.log10(xa))); yb=float(10**f(np.log10(xb)))
         pa=ax.transData.transform((xa,ya)); pb=ax.transData.transform((xb,yb))
         angle=np.degrees(np.arctan2(pb[1]-pa[1],pb[0]-pa[0]))
-        ax.text(xm,ym,ls_labels[lsi],fontsize=8.5,color=ls_colors[lsi],
+        ax.text(xm,ym,ls_labels[lsi],fontsize=10,color=ls_colors[lsi],
                 fontweight='bold',ha='center',va='center',rotation=angle,
-                bbox=dict(fc='white',ec='none',pad=2.0))
+                bbox=dict(fc='white',ec='none',pad=2.5))
 
+    # เส้นแดงแนวตั้ง (k∞) และแนวนอน (k_eff)
     ax.plot([k_inf_pci,k_inf_pci],[1,k_eff_pci],'r-',lw=2.0)
-    ax.annotate('',xy=(k_inf_pci,k_eff_pci),xytext=(k_inf_pci,1),
-                arrowprops=dict(arrowstyle='->',color='red',lw=2.0))
     ax.plot([k_inf_pci,1],[k_eff_pci,k_eff_pci],'r-',lw=2.0)
-    ax.annotate('',xy=(1,k_eff_pci),xytext=(k_inf_pci,k_eff_pci),
-                arrowprops=dict(arrowstyle='->',color='red',lw=2.0))
-    ax.plot(k_inf_pci,k_eff_pci,'ro',markersize=8,zorder=5)
-    ax.annotate(f'k_eff = {k_eff_pci:.0f} pci',
-                xy=(1,k_eff_pci),xytext=(2.5,k_eff_pci*1.8),
-                fontsize=9,color='red',fontweight='bold',
-                arrowprops=dict(arrowstyle='->',color='red',lw=1.2))
-    ax.annotate(f'k∞ = {k_inf_pci:.0f} pci',
-                xy=(k_inf_pci,1),xytext=(k_inf_pci*0.4,1.6),
-                fontsize=9,color='red',fontweight='bold',
-                arrowprops=dict(arrowstyle='->',color='red',lw=1.2))
-    ax.set_xlabel('Effective Modulus of Subgrade Reaction, k∞ (pci)',fontsize=10)
-    ax.set_ylabel('k (Corrected for Potential Loss of Support) (pci)',fontsize=9)
+    ax.plot(k_inf_pci,k_eff_pci,'ro',markersize=10,zorder=5)
+
+    # label k_eff — label ชิดบนเส้น ลูกศรสั้นๆ ชี้จุดตัดแกน Y
+    ax.annotate(f'k_eff={k_eff_pci:.0f}',
+                xy=(1, k_eff_pci),
+                xytext=(2.2, k_eff_pci * 1.35),
+                fontsize=9, color='red', fontweight='bold',
+                ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color='red', lw=1.5,
+                                connectionstyle='arc3,rad=0.0'))
+
+    # label k∞ — ข้อความใต้เส้นแนวตั้ง ด้านขวา ไม่มีลูกศร
+    ax.text(k_inf_pci * 1.06, 1.15,
+            f'k∞={k_inf_pci:.0f}',
+            fontsize=9, color='red', fontweight='bold',
+            ha='left', va='bottom',
+            bbox=dict(fc='white', ec='none', pad=1))
+
+    ax.set_xlabel('Effective Modulus of Subgrade Reaction, k∞ (pci)',fontsize=11)
+    ax.set_ylabel('k (Corrected for Potential Loss of Support) (pci)',fontsize=11)
     ax.set_title(f'AASHTO 1993 Figure 3.4 — Loss of Support\n'
-                 f'k∞={k_inf_pci:.0f} pci, LS={ls} → k_eff={k_eff_pci:.0f} pci',
-                 fontsize=10,color='red')
+                 f'k∞={k_inf_pci:.0f} pci,  LS={ls}  →  k_eff={k_eff_pci:.0f} pci',
+                 fontsize=11,color='red',pad=8)
     plt.tight_layout()
     return fig
 
@@ -882,7 +888,7 @@ D_PAIRS = [(10,25),(11,28),(12,30),(13,32),(14,35)]  # (inch, cm)
 def fig_to_bytes(fig):
     from io import BytesIO
     buf = BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', facecolor='white')
+    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
     buf.seek(0)
     return buf.read()
 
@@ -892,7 +898,7 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
     x_dsb, y_A, y_B = res['x_dsb'], res['y_A'], res['y_B']
     x_C, y_C, x_D, y_D = res['x_C'], res['y_C'], res['x_D'], res['y_D']
 
-    fig, ax = plt.subplots(figsize=(5,5))
+    fig, ax = plt.subplots(figsize=(7,7))
     fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     ax.set_xlim(0,1); ax.set_ylim(0,1)
     ax.set_xticks([]); ax.set_yticks([])
@@ -948,22 +954,22 @@ def plot_f33(MR_psi, ESB_psi, DSB_in, res):
                 xy=(x_C,y_C),xytext=(x_C+0.07,y_C-0.06),
                 fontsize=9,color='red',fontweight='bold',
                 arrowprops=dict(arrowstyle='->',color='red',lw=1.2))
-    ax.set_title(f'MR={MR_psi:,.0f} psi   DSB={DSB_in} in   '
-                 f'ESB={ESB_psi:,.0f} psi   ->   k_inf={k_inf:.0f} pci',
-                 fontsize=9,color='red')
+    ax.set_title(f'MR={MR_psi:,.0f} psi    DSB={DSB_in} in\n'
+                 f'ESB={ESB_psi:,.0f} psi   →   k_inf={k_inf:.0f} pci',
+                 fontsize=9,color='red',pad=6)
     plt.tight_layout()
     return fig
 
 def plot_f34(k_inf_pci, ls, k_eff_pci):
     """วาด Fig.3.4 พร้อมเส้นแดง"""
-    fig, ax = plt.subplots(figsize=(5,4))
+    fig, ax = plt.subplots(figsize=(7,6))
     fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     ax.set_xscale('log'); ax.set_yscale('log')
     ax.set_xlim(1,2000); ax.set_ylim(1,1000)
     xticks=[1,2,5,10,20,50,100,200,500,1000,2000]
     yticks=[1,2,5,10,20,50,100,200,500,1000]
-    ax.set_xticks(xticks); ax.set_xticklabels([str(x) for x in xticks],fontsize=8)
-    ax.set_yticks(yticks); ax.set_yticklabels([str(y) for y in yticks],fontsize=8)
+    ax.set_xticks(xticks); ax.set_xticklabels([str(x) for x in xticks],fontsize=10)
+    ax.set_yticks(yticks); ax.set_yticklabels([str(y) for y in yticks],fontsize=10)
     ax.grid(True,which='both',color='#cccccc',lw=0.5)
     ax.grid(True,which='minor',color='#eeeeee',lw=0.3)
 
@@ -974,36 +980,42 @@ def plot_f34(k_inf_pci, ls, k_eff_pci):
         xs=np.logspace(np.log10(x1),np.log10(x2),100)
         f=interp1d(np.log10([x1,x2]),np.log10([y1,y2]),fill_value='extrapolate')
         ys=10**f(np.log10(xs))
-        ax.plot(xs,ys,color=ls_colors[lsi],lw=2.0)
+        ax.plot(xs,ys,color=ls_colors[lsi],lw=2.2)
         xm=lx_mid[lsi]; ym=float(10**f(np.log10(xm)))
         xa=10**(np.log10(xm)-0.3); xb=10**(np.log10(xm)+0.3)
         ya=float(10**f(np.log10(xa))); yb=float(10**f(np.log10(xb)))
         pa=ax.transData.transform((xa,ya)); pb=ax.transData.transform((xb,yb))
         angle=np.degrees(np.arctan2(pb[1]-pa[1],pb[0]-pa[0]))
-        ax.text(xm,ym,ls_labels[lsi],fontsize=8.5,color=ls_colors[lsi],
+        ax.text(xm,ym,ls_labels[lsi],fontsize=10,color=ls_colors[lsi],
                 fontweight='bold',ha='center',va='center',rotation=angle,
-                bbox=dict(fc='white',ec='none',pad=2.0))
+                bbox=dict(fc='white',ec='none',pad=2.5))
 
+    # เส้นแดงแนวตั้ง (k∞) และแนวนอน (k_eff)
     ax.plot([k_inf_pci,k_inf_pci],[1,k_eff_pci],'r-',lw=2.0)
-    ax.annotate('',xy=(k_inf_pci,k_eff_pci),xytext=(k_inf_pci,1),
-                arrowprops=dict(arrowstyle='->',color='red',lw=2.0))
     ax.plot([k_inf_pci,1],[k_eff_pci,k_eff_pci],'r-',lw=2.0)
-    ax.annotate('',xy=(1,k_eff_pci),xytext=(k_inf_pci,k_eff_pci),
-                arrowprops=dict(arrowstyle='->',color='red',lw=2.0))
-    ax.plot(k_inf_pci,k_eff_pci,'ro',markersize=8,zorder=5)
-    ax.annotate(f'k_eff = {k_eff_pci:.0f} pci',
-                xy=(1,k_eff_pci),xytext=(2.5,k_eff_pci*1.8),
-                fontsize=9,color='red',fontweight='bold',
-                arrowprops=dict(arrowstyle='->',color='red',lw=1.2))
-    ax.annotate(f'k∞ = {k_inf_pci:.0f} pci',
-                xy=(k_inf_pci,1),xytext=(k_inf_pci*0.4,1.6),
-                fontsize=9,color='red',fontweight='bold',
-                arrowprops=dict(arrowstyle='->',color='red',lw=1.2))
-    ax.set_xlabel('Effective Modulus of Subgrade Reaction, k∞ (pci)',fontsize=10)
-    ax.set_ylabel('k (Corrected for Potential Loss of Support) (pci)',fontsize=9)
+    ax.plot(k_inf_pci,k_eff_pci,'ro',markersize=10,zorder=5)
+
+    # label k_eff — label ชิดบนเส้น ลูกศรสั้นๆ ชี้จุดตัดแกน Y
+    ax.annotate(f'k_eff={k_eff_pci:.0f}',
+                xy=(1, k_eff_pci),
+                xytext=(2.2, k_eff_pci * 1.35),
+                fontsize=9, color='red', fontweight='bold',
+                ha='left', va='bottom',
+                arrowprops=dict(arrowstyle='->', color='red', lw=1.5,
+                                connectionstyle='arc3,rad=0.0'))
+
+    # label k∞ — ข้อความใต้เส้นแนวตั้ง ด้านขวา ไม่มีลูกศร
+    ax.text(k_inf_pci * 1.06, 1.15,
+            f'k∞={k_inf_pci:.0f}',
+            fontsize=9, color='red', fontweight='bold',
+            ha='left', va='bottom',
+            bbox=dict(fc='white', ec='none', pad=1))
+
+    ax.set_xlabel('Effective Modulus of Subgrade Reaction, k∞ (pci)',fontsize=11)
+    ax.set_ylabel('k (Corrected for Potential Loss of Support) (pci)',fontsize=11)
     ax.set_title(f'AASHTO 1993 Figure 3.4 — Loss of Support\n'
-                 f'k∞={k_inf_pci:.0f} pci, LS={ls} → k_eff={k_eff_pci:.0f} pci',
-                 fontsize=10,color='red')
+                 f'k∞={k_inf_pci:.0f} pci,  LS={ls}  →  k_eff={k_eff_pci:.0f} pci',
+                 fontsize=11,color='red',pad=8)
     plt.tight_layout()
     return fig
 
