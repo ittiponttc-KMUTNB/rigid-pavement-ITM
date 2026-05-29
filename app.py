@@ -56,26 +56,17 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 
 /* ── st.container(border=True) → rp-card style ── */
-/* selector จาก DevTools จริง: stVerticalBlock มี border */
-div[data-testid="stVerticalBlock"][class*="e1rw0b1"] {
-    background: #FFFFFF !important;
-    border-left: 4px solid #1565C0 !important;
-    border-top: 0.5px solid #E0E0E0 !important;
-    border-right: 0.5px solid #E0E0E0 !important;
-    border-bottom: 0.5px solid #E0E0E0 !important;
-    border-radius: 0 8px 8px 0 !important;
-    padding: 12px 16px !important;
-    margin-bottom: 8px !important;
-}
-/* fallback — wrapper ชั้นนอก */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background: #FFFFFF !important;
-    border-left: 4px solid #1565C0 !important;
-    border-top: 0.5px solid #E0E0E0 !important;
-    border-right: 0.5px solid #E0E0E0 !important;
-    border-bottom: 0.5px solid #E0E0E0 !important;
-    border-radius: 0 8px 8px 0 !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 8px !important;
     margin-bottom: 8px !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    background: #FFFFFF !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
 }
 
 /* ── Card title ── */
