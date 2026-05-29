@@ -716,9 +716,9 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
             self.set_font('Sarabun', 'B', 13)
             self.set_fill_color(21, 101, 192)
             self.set_text_color(255, 255, 255)
-            self.rect(0, 0, 297, 14, 'F')
+            self.rect(0, 0, 210, 14, 'F')
             self.set_xy(10, 3)
-            self.cell(0, 8, 'Rigid Pavement Design - AASHTO 1993', align='L')
+            self.cell(0, 8, 'Rigid Pavement Design - AASHTO 1993  |  KMUTNB', align='L')
             self.set_text_color(0, 0, 0)
 
         def footer(self):
@@ -729,7 +729,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
                       align='C')
             self.set_text_color(0, 0, 0)
 
-    pdf = PDF(orientation='L', unit='mm', format='A4')
+    pdf = PDF(orientation='P', unit='mm', format='A4')
     pdf.add_font('Sarabun', '',  FONT_REG,  uni=True)
     pdf.add_font('Sarabun', 'B', FONT_BOLD, uni=True)
     pdf.set_font('Sarabun', '', 10)
@@ -752,45 +752,45 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         pdf.set_fill_color(238, 242, 247)
         pdf.set_font('Sarabun', 'B', 8)
         pdf.set_text_color(84, 110, 122)
-        pdf.cell(0, 6, f'  {title}', ln=True, fill=True)
+        pdf.cell(0, 5, f'  {title}', ln=True, fill=True)
         pdf.set_text_color(0, 0, 0)
 
     # ── helper: table row ────────────────────────────────────
-    W_LABEL = 80
-    W_COL   = 95
+    W_LABEL = 62
+    W_COL   = 64
 
     def tbl_header():
         pdf.set_font('Sarabun', 'B', 9)
         pdf.set_fill_color(21, 101, 192)
         pdf.set_text_color(255, 255, 255)
-        pdf.cell(W_LABEL, 7, 'รายการ', border=0, fill=True)
+        pdf.cell(W_LABEL, 6, 'รายการ', border=0, fill=True)
         pdf.set_fill_color(21, 101, 192)
-        pdf.cell(W_COL, 7, '  JPCP / JRCP', border=0, fill=True)
+        pdf.cell(W_COL, 6, '  JPCP / JRCP', border=0, fill=True)
         pdf.set_fill_color(46, 125, 50)
-        pdf.cell(W_COL, 7, '  CRCP', border=0, fill=True, ln=True)
+        pdf.cell(W_COL, 6, '  CRCP', border=0, fill=True, ln=True)
         pdf.set_text_color(0, 0, 0)
 
     def tbl_row(label, val_j, val_c, shade=False, bold_val=False):
         pdf.set_fill_color(250, 250, 250) if shade else pdf.set_fill_color(255, 255, 255)
         pdf.set_font('Sarabun', '', 8)
         pdf.set_text_color(84, 110, 122)
-        pdf.cell(W_LABEL, 6, f'  {label}', border='B', fill=True)
+        pdf.cell(W_LABEL, 5, f'  {label}', border='B', fill=True)
         pdf.set_text_color(26, 35, 126)
         f = 'B' if bold_val else ''
-        pdf.set_font('Sarabun', f, 9)
-        pdf.cell(W_COL, 6, f'  {val_j}', border='B', fill=True)
+        pdf.set_font('Sarabun', f, 8)
+        pdf.cell(W_COL, 5, f'  {val_j}', border='B', fill=True)
         pdf.set_text_color(27, 94, 32)
-        pdf.cell(W_COL, 6, f'  {val_c}', border='B', fill=True, ln=True)
+        pdf.cell(W_COL, 5, f'  {val_c}', border='B', fill=True, ln=True)
         pdf.set_text_color(0, 0, 0)
 
     def tbl_row_shared(label, val):
         pdf.set_fill_color(255, 255, 255)
         pdf.set_font('Sarabun', '', 8)
         pdf.set_text_color(84, 110, 122)
-        pdf.cell(W_LABEL, 6, f'  {label}', border='B', fill=True)
+        pdf.cell(W_LABEL, 5, f'  {label}', border='B', fill=True)
         pdf.set_text_color(100, 100, 100)
         pdf.set_font('Sarabun', '', 8)
-        pdf.cell(W_COL * 2, 6, f'  {val}  [ร่วมกัน]', border='B', fill=True, ln=True)
+        pdf.cell(W_COL * 2, 5, f'  {val}  [ร่วมกัน]', border='B', fill=True, ln=True)
         pdf.set_text_color(0, 0, 0)
 
     # ── Comparison Table ─────────────────────────────────────
@@ -813,15 +813,15 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         pdf.set_font('Sarabun', 'B', 9)
         pdf.set_fill_color(21, 101, 192)
         pdf.set_text_color(255, 255, 255)
-        W_NO  = 12
-        W_MAT = 110
-        W_LC  = 49
-        pdf.cell(W_NO,  7, '#',               border=0, fill=True)
-        pdf.cell(W_MAT, 7, '  วัสดุ',         border=0, fill=True)
+        W_NO  = 10
+        W_MAT = 100
+        W_LC  = 40
+        pdf.cell(W_NO,  6, '#',               border=0, fill=True)
+        pdf.cell(W_MAT, 6, '  วัสดุ',         border=0, fill=True)
         pdf.set_fill_color(21, 101, 192)
-        pdf.cell(W_LC,  7, '  JPCP (ซม.)',    border=0, fill=True)
+        pdf.cell(W_LC,  6, '  JPCP (ซม.)',    border=0, fill=True)
         pdf.set_fill_color(46, 125, 50)
-        pdf.cell(W_LC,  7, '  CRCP (ซม.)',    border=0, fill=True, ln=True)
+        pdf.cell(W_LC,  6, '  CRCP (ซม.)',    border=0, fill=True, ln=True)
         pdf.set_text_color(0, 0, 0)
 
         # แผ่นคอนกรีต
