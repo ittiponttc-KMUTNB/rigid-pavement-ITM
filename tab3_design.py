@@ -739,3 +739,309 @@ def render_tab3():
             _export_btn('jpcp', 'JPCP/JRCP', res_j, 'dl_word_j')
         with rc2:
             _export_btn('crcp', 'CRCP', res_c, 'dl_word_c')
+
+    # ════════════════════════════════════════════════════════
+    # Comparison Table
+    # ════════════════════════════════════════════════════════
+    st.markdown('---')
+    _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so)
+
+
+# ============================================================
+# Comparison Table — เพิ่มท้าย render_tab3 (เรียกจากข้างนอก)
+# ============================================================
+def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
+    """แสดง comparison table JPCP vs CRCP — 2 cards"""
+
+    pj = st.session_state.get('jpcp_design_params', {})
+    pc = st.session_state.get('crcp_design_params', {})
+    kj_eff  = st.session_state.get('jpcp_k_eff')
+    kc_eff  = st.session_state.get('crcp_k_eff')
+    kj_opt  = pj.get('k_opt')
+    kc_opt  = pc.get('k_opt')
+    dj_cm   = st.session_state.get('jpcp_rec_d_cm')
+    dc_cm   = st.session_state.get('crcp_rec_d_cm')
+    rows_j  = st.session_state.get('jpcp_design_rows', [])
+    rows_c  = st.session_state.get('crcp_design_rows', [])
+    layers_j = st.session_state.get('jpcp_layers', [])
+    layers_c = st.session_state.get('crcp_layers', [])
+
+    if not (res_j or res_c):
+        return
+
+    # ── helper: หา row ของ D แนะนำ ──────────────────────────
+    def _get_row(rows, d_cm):
+        return next((r for r in rows if r['d_cm'] == d_cm), None)
+
+    rj = _get_row(rows_j, dj_cm) if dj_cm else None
+    rc_ = _get_row(rows_c, dc_cm) if dc_cm else None
+
+    # ── CSS สำหรับ table ─────────────────────────────────────
+    TABLE_CSS = """
+    <style>
+    .cmp-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .cmp-table th { padding:7px 10px; font-size:11px; font-weight:700; }
+    .cmp-table td { padding:5px 10px; border-bottom:0.5px solid #F0F0F0; vertical-align:middle; }
+    .cmp-th-label { text-align:left; color:#78909C; background:#FAFAFA; width:36%; }
+    .cmp-th-j { background:#1565C0; color:#fff; text-align:center; width:32%; }
+    .cmp-th-c { background:#2E7D32; color:#fff; text-align:center; width:32%; }
+    .cmp-td-label { color:#546E7A; background:#FAFAFA; font-size:11px; }
+    .cmp-td-b { text-align:center; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#1A237E; }
+    .cmp-td-g { text-align:center; font-family:'IBM Plex Mono',monospace; font-size:12px; color:#1B5E20; }
+    .cmp-td-shared { text-align:center; color:#546E7A; font-family:'IBM Plex Mono',monospace; font-size:12px; }
+    .cmp-shdr td { background:#EEF2F7; font-size:10px; font-weight:700; color:#546E7A;
+                   text-transform:uppercase; letter-spacing:0.07em; padding:5px 10px; }
+    .cmp-shared-tag { background:#F3E5F5; color:#6A1B9A; border-radius:3px;
+                      font-size:9px; padding:1px 5px; margin-left:4px; }
+    .cmp-badge-ok   { background:#E8F5E9; color:#2E7D32; border-radius:4px;
+                      padding:3px 10px; font-size:11px; font-weight:700; display:inline-block; }
+    .cmp-badge-fail { background:#FFEBEE; color:#C62828; border-radius:4px;
+                      padding:3px 10px; font-size:11px; font-weight:700; display:inline-block; }
+    .cmp-bar-wrap { background:#E0E0E0; border-radius:3px; height:5px; margin-top:4px; }
+    .cmp-bar-b { background:#1565C0; border-radius:3px; height:5px; }
+    .cmp-bar-g { background:#2E7D32; border-radius:3px; height:5px; }
+    .cmp-layer-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .cmp-layer-table th { padding:5px 8px; font-size:10px; font-weight:700; }
+    .cmp-layer-table td { padding:4px 8px; border-bottom:0.5px solid #F5F5F5; vertical-align:middle; }
+    .cmp-lth-no  { background:#FAFAFA; color:#90A4AE; width:5%;  text-align:center; }
+    .cmp-lth-mat { background:#FAFAFA; color:#78909C; width:42%; }
+    .cmp-lth-j   { background:#E3F2FD; color:#1565C0; text-align:center; width:26.5%; font-size:10px; font-weight:700; }
+    .cmp-lth-c   { background:#E8F5E9; color:#2E7D32; text-align:center; width:26.5%; font-size:10px; font-weight:700; }
+    .cmp-ltd-no  { text-align:center; color:#B0BEC5; font-size:10px; }
+    .cmp-ltd-mat { color:#546E7A; }
+    .cmp-ltd-j   { text-align:center; font-family:'IBM Plex Mono',monospace; color:#1565C0; font-weight:600; }
+    .cmp-ltd-c   { text-align:center; font-family:'IBM Plex Mono',monospace; color:#2E7D32; font-weight:600; }
+    .cmp-ltd-na  { text-align:center; color:#BDBDBD; font-size:10px; }
+    .cmp-total   { background:#F0F4FF; font-weight:700; }
+    </style>
+    """
+    st.markdown(TABLE_CSS, unsafe_allow_html=True)
+
+    # ── helper: badge ────────────────────────────────────────
+    def _badge(ok):
+        if ok is None: return '<span style="color:#90A4AE">—</span>'
+        cls = 'cmp-badge-ok' if ok else 'cmp-badge-fail'
+        txt = '✅ ผ่าน' if ok else '❌ ไม่ผ่าน'
+        return f'<span class="{cls}">{txt}</span>'
+
+    def _val(v, fmt='{:.0f}', fallback='—'):
+        return fmt.format(v) if v is not None else fallback
+
+    def _bar(pct, color_class):
+        w = min(pct * 100, 100) if pct else 0
+        return (f'<div class="cmp-bar-wrap">'
+                f'<div class="{color_class}" style="width:{w:.0f}%"></div></div>')
+
+    dpsi = 4.5 - pt
+    dj_in = round(dj_cm / 2.54) if dj_cm else '—'
+    dc_in = round(dc_cm / 2.54) if dc_cm else '—'
+
+    # ════════════════════════════════════════════════════════
+    # Card 1 — Design Comparison
+    # ════════════════════════════════════════════════════════
+    with st.container(border=True):
+        st.markdown('<div class="rp-card-title">📊 เปรียบเทียบผลการออกแบบ — JPCP/JRCP vs CRCP</div>',
+                    unsafe_allow_html=True)
+
+        shared = '<span class="cmp-shared-tag">ร่วมกัน</span>'
+        jj = pj.get('j', '—')
+        jc = pc.get('j', '—')
+
+        # W18 req ของ D แนะนำ
+        w18_req_j = rj.get('w18_req') if rj else None
+        w18_req_c = rc_.get('w18_req') if rc_ else None
+        w18_cap_j = rj.get('w18_cap') if rj else None
+        w18_cap_c = rc_.get('w18_cap') if rc_ else None
+        ratio_j   = rj.get('ratio') if rj else None
+        ratio_c   = rc_.get('ratio') if rc_ else None
+        passed_j  = rj.get('passed') if rj else None
+        passed_c  = rc_.get('passed') if rc_ else None
+
+        # k_opt check
+        kj_ok = (kj_eff >= kj_opt) if (kj_eff and kj_opt) else None
+        kc_ok = (kc_eff >= kc_opt) if (kc_eff and kc_opt) else None
+        dkj = (kj_eff - kj_opt) if (kj_eff and kj_opt) else None
+        dkc = (kc_eff - kc_opt) if (kc_eff and kc_opt) else None
+
+        overall_j = (passed_j and kj_ok) if (passed_j is not None and kj_ok is not None) else None
+        overall_c = (passed_c and kc_ok) if (passed_c is not None and kc_ok is not None) else None
+
+        html = f'''
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th class="cmp-th-label">รายการ</th>
+              <th class="cmp-th-j">◻ JPCP / JRCP</th>
+              <th class="cmp-th-c">◻ CRCP</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <tr class="cmp-shdr"><td colspan="3">1 · พารามิเตอร์ออกแบบ</td></tr>
+            <tr>
+              <td class="cmp-td-label">f'c (cube)</td>
+              <td class="cmp-td-shared" colspan="2">{fc_cube:.0f} ksc {shared}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">Ec</td>
+              <td class="cmp-td-shared" colspan="2">{ec_psi:,.0f} psi {shared}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">Sc (ทล. lock)</td>
+              <td class="cmp-td-shared" colspan="2">{SC_FIXED:.0f} psi {shared}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">J — Load Transfer</td>
+              <td class="cmp-td-b">{jj}</td>
+              <td class="cmp-td-g">{jc}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">Cd — Drainage</td>
+              <td class="cmp-td-shared" colspan="2">{cd:.1f} {shared}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">Pt / ΔPSI</td>
+              <td class="cmp-td-shared" colspan="2">{pt:.1f} / {dpsi:.1f} {shared}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">ZR / So</td>
+              <td class="cmp-td-shared" colspan="2">{zr:.3f} / {so:.2f} {shared}</td>
+            </tr>
+
+            <tr class="cmp-shdr"><td colspan="3">2 · ความหนาแผ่นคอนกรีต</td></tr>
+            <tr>
+              <td class="cmp-td-label">D แนะนำ</td>
+              <td class="cmp-td-b">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#1565C0">{dj_in} in</span>
+                <div style="font-size:10px;color:#78909C">{dj_cm or '—'} ซม.</div>
+              </td>
+              <td class="cmp-td-g">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#2E7D32">{dc_in} in</span>
+                <div style="font-size:10px;color:#78909C">{dc_cm or '—'} ซม.</div>
+              </td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">W18 required (D แนะนำ)</td>
+              <td class="cmp-td-b">{_val(w18_req_j, '{:,.0f}')}</td>
+              <td class="cmp-td-g">{_val(w18_req_c, '{:,.0f}')}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">W18 capacity</td>
+              <td class="cmp-td-b">{_val(w18_cap_j, '{:,.0f}')}
+                {_bar(ratio_j, 'cmp-bar-b') if ratio_j else ''}
+              </td>
+              <td class="cmp-td-g">{_val(w18_cap_c, '{:,.0f}')}
+                {_bar(ratio_c, 'cmp-bar-g') if ratio_c else ''}
+              </td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">Ratio (cap / req)</td>
+              <td class="cmp-td-b" style="font-weight:700">×{_val(ratio_j, '{:.2f}')}</td>
+              <td class="cmp-td-g" style="font-weight:700">×{_val(ratio_c, '{:.2f}')}</td>
+            </tr>
+
+            <tr class="cmp-shdr"><td colspan="3">3 · k_opt vs k_eff</td></tr>
+            <tr>
+              <td class="cmp-td-label">k_eff (จาก Tab 2)</td>
+              <td class="cmp-td-b">{_val(kj_eff)} pci</td>
+              <td class="cmp-td-g">{_val(kc_eff)} pci</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">k_opt (min required)</td>
+              <td class="cmp-td-b">{_val(kj_opt)} pci</td>
+              <td class="cmp-td-g">{_val(kc_opt)} pci</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">Δk = k_eff − k_opt</td>
+              <td class="cmp-td-b">{(f"{dkj:+.0f} pci ({dkj/kj_opt*100:+.1f}%)") if dkj is not None else "—"}</td>
+              <td class="cmp-td-g">{(f"{dkc:+.0f} pci ({dkc/kc_opt*100:+.1f}%)") if dkc is not None else "—"}</td>
+            </tr>
+
+            <tr class="cmp-shdr"><td colspan="3">4 · ผลการตรวจสอบ</td></tr>
+            <tr>
+              <td class="cmp-td-label">W18 capacity ≥ W18 required</td>
+              <td class="cmp-td-b">{_badge(passed_j)}</td>
+              <td class="cmp-td-g">{_badge(passed_c)}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">k_eff ≥ k_opt</td>
+              <td class="cmp-td-b">{_badge(kj_ok)}</td>
+              <td class="cmp-td-g">{_badge(kc_ok)}</td>
+            </tr>
+            <tr style="background:#F9FBE7">
+              <td class="cmp-td-label" style="font-weight:700;color:#33691E">สรุปผล</td>
+              <td style="text-align:center">{_badge(overall_j)}</td>
+              <td style="text-align:center">{_badge(overall_c)}</td>
+            </tr>
+
+          </tbody>
+        </table>'''
+        st.markdown(html, unsafe_allow_html=True)
+
+    # ════════════════════════════════════════════════════════
+    # Card 2 — Layer Structure
+    # ════════════════════════════════════════════════════════
+    if layers_j or layers_c:
+        with st.container(border=True):
+            st.markdown('<div class="rp-card-title">🏗️ โครงสร้างชั้นทาง — ความหนาแต่ละชั้น (ซม.)</div>',
+                        unsafe_allow_html=True)
+
+            # รวม layer names จากทั้งสอง
+            names_j = [l['name'] for l in layers_j]
+            names_c = [l['name'] for l in layers_c]
+            all_names = list(dict.fromkeys(names_j + names_c))  # unique preserve order
+
+            def _get_thick(layers, name):
+                for l in layers:
+                    if l['name'] == name:
+                        return l['thickness_cm']
+                return None
+
+            rows_html = ''
+            # แถว 0: แผ่นคอนกรีต
+            rows_html += f'''
+            <tr style="background:#EEF2F7">
+              <td class="cmp-ltd-no" style="font-weight:700">0</td>
+              <td class="cmp-ltd-mat" style="font-weight:700;color:#1565C0">แผ่นคอนกรีต (D)</td>
+              <td class="cmp-ltd-j" style="font-size:14px">{dj_cm or "—"}</td>
+              <td class="cmp-ltd-c" style="font-size:14px">{dc_cm or "—"}</td>
+            </tr>'''
+
+            # แถว layer
+            tot_j = dj_cm or 0
+            tot_c = dc_cm or 0
+            for i, name in enumerate(all_names, start=1):
+                tj = _get_thick(layers_j, name)
+                tc = _get_thick(layers_c, name)
+                if tj: tot_j += tj
+                if tc: tot_c += tc
+                td_j = f'<td class="cmp-ltd-j">{tj}</td>' if tj else '<td class="cmp-ltd-na">—</td>'
+                td_c = f'<td class="cmp-ltd-c">{tc}</td>' if tc else '<td class="cmp-ltd-na">—</td>'
+                rows_html += f'''
+                <tr>
+                  <td class="cmp-ltd-no">{i}</td>
+                  <td class="cmp-ltd-mat">{name}</td>
+                  {td_j}{td_c}
+                </tr>'''
+
+            # แถว total
+            rows_html += f'''
+            <tr class="cmp-total">
+              <td class="cmp-ltd-no"></td>
+              <td class="cmp-ltd-mat">รวมทั้งหมด (รวมคอนกรีต)</td>
+              <td class="cmp-ltd-j" style="font-size:13px">{tot_j} ซม.</td>
+              <td class="cmp-ltd-c" style="font-size:13px">{tot_c} ซม.</td>
+            </tr>'''
+
+            st.markdown(f'''
+            <table class="cmp-layer-table">
+              <thead>
+                <tr>
+                  <th class="cmp-lth-no">#</th>
+                  <th class="cmp-lth-mat">วัสดุ</th>
+                  <th class="cmp-lth-j">◻ JPCP (ซม.)</th>
+                  <th class="cmp-lth-c">◻ CRCP (ซม.)</th>
+                </tr>
+              </thead>
+              <tbody>{rows_html}</tbody>
+            </table>''', unsafe_allow_html=True)
