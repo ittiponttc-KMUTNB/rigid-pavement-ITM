@@ -702,9 +702,18 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
     except ImportError:
         return None
 
+    import os
+    BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+    FONT_REG  = os.path.join(BASE_DIR, 'Sarabun-Regular.ttf')
+    FONT_BOLD = os.path.join(BASE_DIR, 'Sarabun-Bold.ttf')
+    # fallback — ถ้าไม่มี font ใน BASE_DIR ลองหาใน working dir
+    if not os.path.exists(FONT_REG):
+        FONT_REG  = 'Sarabun-Regular.ttf'
+        FONT_BOLD = 'Sarabun-Bold.ttf'
+
     class PDF(FPDF):
         def header(self):
-            self.set_font('Helvetica', 'B', 13)
+            self.set_font('Sarabun', 'B', 13)
             self.set_fill_color(21, 101, 192)
             self.set_text_color(255, 255, 255)
             self.rect(0, 0, 297, 14, 'F')
@@ -714,13 +723,16 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
 
         def footer(self):
             self.set_y(-10)
-            self.set_font('Helvetica', 'I', 8)
+            self.set_font('Sarabun', '', 8)
             self.set_text_color(150, 150, 150)
-            self.cell(0, 8, f'Page {self.page_no()} | KMUTNB - Dept. of Civil Engineering Education',
+            self.cell(0, 8, f'Page {self.page_no()} | KMUTNB - ภาควิชาครุศาสตร์โยธา - มจพ.',
                       align='C')
             self.set_text_color(0, 0, 0)
 
     pdf = PDF(orientation='L', unit='mm', format='A4')
+    pdf.add_font('Sarabun', '',  FONT_REG,  uni=True)
+    pdf.add_font('Sarabun', 'B', FONT_BOLD, uni=True)
+    pdf.set_font('Sarabun', '', 10)
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=12)
 
