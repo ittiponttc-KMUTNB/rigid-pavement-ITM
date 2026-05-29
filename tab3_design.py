@@ -416,7 +416,7 @@ def _design_block(prefix, ptype, fc_cyl, ec_psi, cd, w18_req, pt, zr, so, bd, bd
     w18_note = 'แยกตาม D' if (ed and not w18_manual_mode) else 'ค่าเดียว (manual)'
     _row(f'W18 ({w18_note})', f'{w18_req:,.0f} ESALs (ref D=30)')
     _row('k_eff (Tab 2)',  f'{k_eff:.0f} pci')
-    _row("f'c (cube)", f"{st.session_state.get('fc_cube', fc_cube):.0f} ksc")
+    _row("f'c (cube)", f"{st.session_state.get('fc_cube', 350):.0f} ksc")
     _row('Ec',             f'{ec_psi:,.0f} psi')
     _row('Sc (ทล. lock)', f'{SC_FIXED:.0f} psi')
     _row('J',              f'{j_val:.1f}', hi=True)
