@@ -55,17 +55,25 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 11px; color: #FFFFFF;
 }
 
-/* ── st.container(border=True) → style เป็น rp-card ── */
+/* ── st.container(border=True) → rp-card style ── */
+/* target ทุก layer ที่ Streamlit อาจ render */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background: #FFFFFF !important;
-    border: 0.5px solid #E0E0E0 !important;
     border-left: 4px solid #1565C0 !important;
+    border-top: 0.5px solid #E0E0E0 !important;
+    border-right: 0.5px solid #E0E0E0 !important;
+    border-bottom: 0.5px solid #E0E0E0 !important;
     border-radius: 0 8px 8px 0 !important;
-    padding: 2px 6px !important;
     margin-bottom: 8px !important;
 }
+div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    background: #FFFFFF !important;
+    border: none !important;
+    border-radius: 0 8px 8px 0 !important;
+    padding: 10px 14px !important;
+}
 
-/* ── Card title (ใช้ใน _card_title helper) ── */
+/* ── Card title ── */
 .rp-card-title {
     font-size: 13px; font-weight: 600; color: #1565C0;
     margin-bottom: 10px; padding-bottom: 6px;
