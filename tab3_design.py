@@ -686,66 +686,187 @@ def render_tab3():
                         plt.close(fig)
 
     # ════════════════════════════════════════════════════════
-    # Card 4 — Word Report Export
-    # ════════════════════════════════════════════════════════
-    st.markdown('---')
-    with st.container(border=True):
-        st.markdown('<div class="rp-card-title">📄 Export รายงาน Word (.docx)</div>',
-                    unsafe_allow_html=True)
-        date_str  = datetime.now().strftime('%d/%m/%Y %H:%M')
-        proj_name = st.session_state.get('project_name', '')
-        rc1, rc2  = st.columns(2)
-
-        def _export_btn(prefix, ptype, res, key):
-            rows_key   = f'{prefix}_design_rows'
-            params_key = f'{prefix}_design_params'
-            rec_key    = f'{prefix}_rec_d_cm'
-            sbytes_key = f'{prefix}_struct_bytes'
-
-            if res is None or st.session_state.get(rows_key) is None:
-                st.markdown(
-                    '<div style="background:#F5F5F5;border:1px solid #E0E0E0;'
-                    'border-radius:8px;padding:8px 12px;font-size:12px;color:#90A4AE;'
-                    'text-align:center">'
-                    f'📋 คำนวณ {ptype} ก่อนเพื่อ export</div>',
-                    unsafe_allow_html=True)
-                return
-
-            try:
-                buf = _create_word_report(
-                    ptype, proj_name,
-                    st.session_state.get(params_key, {}),
-                    st.session_state.get(rows_key, []),
-                    st.session_state.get(rec_key) or 30,
-                    st.session_state.get(sbytes_key),
-                    date_str,
-                    fig33_bytes=st.session_state.get(f'{prefix}_fig33_bytes'),
-                    fig34_bytes=st.session_state.get(f'{prefix}_fig34_bytes'))
-            except Exception as e:
-                st.error(f'❌ สร้างรายงานไม่สำเร็จ: {e}')
-                return
-
-            if buf is None:
-                st.error('❌ ไม่พบ python-docx — กรุณาเพิ่ม python-docx ใน requirements.txt')
-                return
-
-            fname = f'Report_{prefix.upper()}_{datetime.now().strftime("%Y%m%d_%H%M")}.docx'
-            st.download_button(
-                f'📥 Report {ptype} (.docx)', buf, fname,
-                'application/vnd.openxmlformats-officedocument'
-                '.wordprocessingml.document',
-                key=key, use_container_width=True)
-
-        with rc1:
-            _export_btn('jpcp', 'JPCP/JRCP', res_j, 'dl_word_j')
-        with rc2:
-            _export_btn('crcp', 'CRCP', res_c, 'dl_word_c')
-
-    # ════════════════════════════════════════════════════════
-    # Comparison Table
+    # Comparison Table + PDF Export
     # ════════════════════════════════════════════════════════
     st.markdown('---')
     _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so)
+
+
+# ============================================================
+# PDF Summary Export (fpdf2)
+# ============================================================
+def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm, dc_cm):
+    """สร้าง PDF summary — ชื่อโครงการ + comparison table + layer table"""
+    try:
+        from fpdf import FPDF
+    except ImportError:
+        return None
+
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Helvetica', 'B', 13)
+            self.set_fill_color(21, 101, 192)
+            self.set_text_color(255, 255, 255)
+            self.rect(0, 0, 297, 14, 'F')
+            self.set_xy(10, 3)
+            self.cell(0, 8, 'Rigid Pavement Design - AASHTO 1993', align='L')
+            self.set_text_color(0, 0, 0)
+
+        def footer(self):
+            self.set_y(-10)
+            self.set_font('Helvetica', 'I', 8)
+            self.set_text_color(150, 150, 150)
+            self.cell(0, 8, f'Page {self.page_no()} | KMUTNB - Dept. of Civil Engineering Education',
+                      align='C')
+            self.set_text_color(0, 0, 0)
+
+    pdf = PDF(orientation='L', unit='mm', format='A4')
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=12)
+
+    # ── Project info ─────────────────────────────────────────
+    pdf.set_xy(10, 18)
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(21, 101, 192)
+    pdf.cell(0, 7, f'Project: {proj_name or "(ไม่ระบุชื่อโครงการ)"}', ln=True)
+    pdf.set_font('Helvetica', '', 9)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, f'Date: {date_str}', ln=True)
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(2)
+
+    # ── helper: section header ────────────────────────────────
+    def sec_header(title):
+        pdf.set_fill_color(238, 242, 247)
+        pdf.set_font('Helvetica', 'B', 8)
+        pdf.set_text_color(84, 110, 122)
+        pdf.cell(0, 6, f'  {title}', ln=True, fill=True)
+        pdf.set_text_color(0, 0, 0)
+
+    # ── helper: table row ────────────────────────────────────
+    W_LABEL = 80
+    W_COL   = 95
+
+    def tbl_header():
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_fill_color(21, 101, 192)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(W_LABEL, 7, 'รายการ', border=0, fill=True)
+        pdf.set_fill_color(21, 101, 192)
+        pdf.cell(W_COL, 7, '  JPCP / JRCP', border=0, fill=True)
+        pdf.set_fill_color(46, 125, 50)
+        pdf.cell(W_COL, 7, '  CRCP', border=0, fill=True, ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+    def tbl_row(label, val_j, val_c, shade=False, bold_val=False):
+        pdf.set_fill_color(250, 250, 250) if shade else pdf.set_fill_color(255, 255, 255)
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_text_color(84, 110, 122)
+        pdf.cell(W_LABEL, 6, f'  {label}', border='B', fill=True)
+        pdf.set_text_color(26, 35, 126)
+        f = 'B' if bold_val else ''
+        pdf.set_font('Helvetica', f, 9)
+        pdf.cell(W_COL, 6, f'  {val_j}', border='B', fill=True)
+        pdf.set_text_color(27, 94, 32)
+        pdf.cell(W_COL, 6, f'  {val_c}', border='B', fill=True, ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+    def tbl_row_shared(label, val):
+        pdf.set_fill_color(255, 255, 255)
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_text_color(84, 110, 122)
+        pdf.cell(W_LABEL, 6, f'  {label}', border='B', fill=True)
+        pdf.set_text_color(100, 100, 100)
+        pdf.set_font('Helvetica', 'I', 8)
+        pdf.cell(W_COL * 2, 6, f'  {val}  [ร่วมกัน]', border='B', fill=True, ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+    # ── Comparison Table ─────────────────────────────────────
+    tbl_header()
+
+    for sec_title, rows in sections:
+        sec_header(sec_title)
+        for row in rows:
+            if row.get('shared'):
+                tbl_row_shared(row['label'], row['val_j'])
+            else:
+                tbl_row(row['label'], str(row['val_j']), str(row['val_c']),
+                        shade=row.get('shade', False),
+                        bold_val=row.get('bold', False))
+
+    pdf.ln(4)
+
+    # ── Layer Structure Table ─────────────────────────────────
+    if layers_j or layers_c:
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_fill_color(21, 101, 192)
+        pdf.set_text_color(255, 255, 255)
+        W_NO  = 12
+        W_MAT = 110
+        W_LC  = 49
+        pdf.cell(W_NO,  7, '#',               border=0, fill=True)
+        pdf.cell(W_MAT, 7, '  วัสดุ',         border=0, fill=True)
+        pdf.set_fill_color(21, 101, 192)
+        pdf.cell(W_LC,  7, '  JPCP (ซม.)',    border=0, fill=True)
+        pdf.set_fill_color(46, 125, 50)
+        pdf.cell(W_LC,  7, '  CRCP (ซม.)',    border=0, fill=True, ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+        # แผ่นคอนกรีต
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_fill_color(238, 242, 247)
+        pdf.set_text_color(21, 101, 192)
+        pdf.cell(W_NO,  6, '0',                      border='B', fill=True)
+        pdf.cell(W_MAT, 6, '  แผ่นคอนกรีต (D)',     border='B', fill=True)
+        pdf.cell(W_LC,  6, f'  {dj_cm or "-"}',      border='B', fill=True)
+        pdf.set_text_color(46, 125, 50)
+        pdf.cell(W_LC,  6, f'  {dc_cm or "-"}',      border='B', fill=True, ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+        names_j = [l['name'] for l in layers_j]
+        names_c = [l['name'] for l in layers_c]
+        all_names = list(dict.fromkeys(names_j + names_c))
+
+        def _thick(layers, name):
+            for l in layers:
+                if l['name'] == name:
+                    return l['thickness_cm']
+            return None
+
+        tot_j = dj_cm or 0
+        tot_c = dc_cm or 0
+        for i, name in enumerate(all_names, 1):
+            tj = _thick(layers_j, name)
+            tc = _thick(layers_c, name)
+            if tj: tot_j += tj
+            if tc: tot_c += tc
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_fill_color(255, 255, 255)
+            pdf.set_text_color(100, 100, 100)
+            pdf.cell(W_NO, 6, str(i), border='B', fill=True)
+            pdf.set_text_color(84, 110, 122)
+            pdf.cell(W_MAT, 6, f'  {name[:55]}', border='B', fill=True)
+            pdf.set_text_color(26, 35, 126)
+            pdf.cell(W_LC, 6, f'  {tj if tj else "-"}', border='B', fill=True)
+            pdf.set_text_color(27, 94, 32)
+            pdf.cell(W_LC, 6, f'  {tc if tc else "-"}', border='B', fill=True, ln=True)
+            pdf.set_text_color(0, 0, 0)
+
+        # total row
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_fill_color(240, 244, 255)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(W_NO,  6, '',                      border='B', fill=True)
+        pdf.cell(W_MAT, 6, '  รวมทั้งหมด (รวมคอนกรีต)', border='B', fill=True)
+        pdf.set_text_color(21, 101, 192)
+        pdf.cell(W_LC,  6, f'  {tot_j} ซม.',        border='B', fill=True)
+        pdf.set_text_color(46, 125, 50)
+        pdf.cell(W_LC,  6, f'  {tot_c} ซม.',        border='B', fill=True, ln=True)
+
+    from io import BytesIO
+    buf = BytesIO(pdf.output())
+    buf.seek(0)
+    return buf
 
 
 # ============================================================
@@ -977,6 +1098,62 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
 
           </tbody>
         </table>'''
+        # ── เตรียม sections สำหรับ PDF ─────────────────────
+        dpsi_val = 4.5 - pt
+        pdf_sections = [
+            ('1 · พารามิเตอร์ออกแบบ', [
+                {'label': "f'c (cube)",    'val_j': f'{fc_cube:.0f} ksc',          'shared': True},
+                {'label': 'Ec',             'val_j': f'{ec_psi:,.0f} psi',           'shared': True},
+                {'label': 'Sc (ทล. lock)',  'val_j': f'{SC_FIXED:.0f} psi',          'shared': True},
+                {'label': 'J',              'val_j': str(jj), 'val_c': str(jc)},
+                {'label': 'Cd',             'val_j': f'{cd:.1f}',                    'shared': True},
+                {'label': 'Pt / DPSI',      'val_j': f'{pt:.1f} / {dpsi_val:.1f}',  'shared': True},
+                {'label': 'ZR / So',        'val_j': f'{zr:.3f} / {so:.2f}',        'shared': True},
+            ]),
+            ('2 · ความหนาแผ่นคอนกรีต', [
+                {'label': 'D แนะนำ',
+                 'val_j': f'{dj_in} in ({dj_cm} cm)' if dj_cm else '-',
+                 'val_c': f'{dc_in} in ({dc_cm} cm)' if dc_cm else '-', 'bold': True},
+                {'label': 'W18 required (D แนะนำ)',
+                 'val_j': f'{w18_req_j:,.0f}' if w18_req_j else '-',
+                 'val_c': f'{w18_req_c:,.0f}' if w18_req_c else '-'},
+                {'label': 'W18 capacity',
+                 'val_j': f'{w18_cap_j:,.0f}' if w18_cap_j else '-',
+                 'val_c': f'{w18_cap_c:,.0f}' if w18_cap_c else '-'},
+                {'label': 'Ratio (cap/req)',
+                 'val_j': f'x{ratio_j:.2f}' if ratio_j else '-',
+                 'val_c': f'x{ratio_c:.2f}' if ratio_c else '-', 'bold': True},
+            ]),
+            ('3 · k_opt vs k_eff', [
+                {'label': 'k_eff (Tab 2)',
+                 'val_j': f'{kj_eff:.0f} pci' if kj_eff else '-',
+                 'val_c': f'{kc_eff:.0f} pci' if kc_eff else '-'},
+                {'label': 'k_opt (min required)',
+                 'val_j': f'{kj_opt:.0f} pci' if kj_opt else '-',
+                 'val_c': f'{kc_opt:.0f} pci' if kc_opt else '-'},
+                {'label': 'Dk = k_eff - k_opt',
+                 'val_j': f'{dkj:+.0f} pci ({dkj/kj_opt*100:+.1f}%)' if dkj else '-',
+                 'val_c': f'{dkc:+.0f} pci ({dkc/kc_opt*100:+.1f}%)' if dkc else '-'},
+            ]),
+            ('4 · ผลการตรวจสอบ', [
+                {'label': 'W18 cap >= W18 req',
+                 'val_j': 'ผ่าน' if passed_j else 'ไม่ผ่าน',
+                 'val_c': 'ผ่าน' if passed_c else 'ไม่ผ่าน', 'bold': True},
+                {'label': 'k_eff >= k_opt',
+                 'val_j': 'ผ่าน' if kj_ok else 'ไม่ผ่าน',
+                 'val_c': 'ผ่าน' if kc_ok else 'ไม่ผ่าน', 'bold': True},
+                {'label': 'สรุปผล',
+                 'val_j': 'ผ่าน' if overall_j else 'ไม่ผ่าน',
+                 'val_c': 'ผ่าน' if overall_c else 'ไม่ผ่าน',
+                 'bold': True, 'shade': True},
+            ]),
+        ]
+        st.session_state['_pdf_sections']  = pdf_sections
+        st.session_state['_pdf_layers_j']  = layers_j
+        st.session_state['_pdf_layers_c']  = layers_c
+        st.session_state['_pdf_dj_cm']     = dj_cm
+        st.session_state['_pdf_dc_cm']     = dc_cm
+
         # render ผ่าน components.html (iframe) — รองรับ <table> เต็มรูปแบบ
         n_rows = 7 + 4 + 3 + 3
         height = n_rows * 32 + 140
@@ -1059,3 +1236,33 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
               <tbody>{rows_html}</tbody>
             </table></body></html>'''
             components.html(layer_full, height=layer_height, scrolling=False)
+
+    # ── PDF Export button ────────────────────────────────
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown('<div class="rp-card-title">📄 Export PDF Summary</div>',
+                    unsafe_allow_html=True)
+        proj_name = st.session_state.get('project_name', '') or '(ไม่ระบุชื่อโครงการ)'
+        date_str  = datetime.now().strftime('%d/%m/%Y %H:%M')
+        secs  = st.session_state.get('_pdf_sections')
+        lj    = st.session_state.get('_pdf_layers_j', [])
+        lc    = st.session_state.get('_pdf_layers_c', [])
+        dj    = st.session_state.get('_pdf_dj_cm')
+        dc    = st.session_state.get('_pdf_dc_cm')
+        if secs:
+            try:
+                pdf_buf = _create_pdf_summary(proj_name, date_str, secs, lj, lc, dj, dc)
+                if pdf_buf:
+                    fname = f'Summary_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf'
+                    st.download_button(
+                        '📥 Download PDF Summary', pdf_buf, fname,
+                        'application/pdf', key='dl_pdf_summary',
+                        use_container_width=True)
+                else:
+                    st.error('❌ ไม่พบ fpdf2 — กรุณาเพิ่ม fpdf2 ใน requirements.txt')
+            except Exception as e:
+                st.error(f'❌ สร้าง PDF ไม่สำเร็จ: {e}')
+        else:
+            st.markdown(
+                '<div class="rp-status-info">ℹ️ คำนวณ Design ทั้ง JPCP และ CRCP ก่อนเพื่อ export PDF</div>',
+                unsafe_allow_html=True)
