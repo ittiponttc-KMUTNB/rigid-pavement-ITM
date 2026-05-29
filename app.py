@@ -54,18 +54,19 @@ html, body, [data-testid="stAppViewContainer"] {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px; color: #FFFFFF;
 }
-/* ── Cards ── */
+/* ── Cards — Style B: left border accent ── */
 .rp-card {
-    background: #FFF8E1;
-    border: 1px solid #FFECB3;
-    border-radius: 8px;
-    padding: 8px 12px;
-    margin-bottom: 6px;
+    background: #FFFFFF;
+    border: 0.5px solid #E0E0E0;
+    border-left: 4px solid #1565C0;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    margin-bottom: 8px;
 }
 .rp-card-title {
     font-size: 13px; font-weight: 600; color: #1565C0;
     margin-bottom: 10px; padding-bottom: 6px;
-    border-bottom: 1px solid #FFECB3;
+    border-bottom: 0.5px solid #E0E0E0;
 }
 /* ── Metrics ── */
 .rp-metric {
