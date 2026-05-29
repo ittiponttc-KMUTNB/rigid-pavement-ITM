@@ -4,6 +4,7 @@ Rigid Pavement Design V7
 AASHTO 1993 — คำนวณความหนาแผ่นคอนกรีต JPCP/JRCP & CRCP
 """
 import streamlit as st
+import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 from io import BytesIO
 from datetime import datetime
@@ -976,7 +977,16 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
 
           </tbody>
         </table>'''
-        st.markdown(html, unsafe_allow_html=True)
+        # render ผ่าน components.html (iframe) — รองรับ <table> เต็มรูปแบบ
+        n_rows = 7 + 4 + 3 + 3
+        height = n_rows * 32 + 140
+        full_html = f'''<!DOCTYPE html><html><head>
+        <meta charset="utf-8">
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+        {TABLE_CSS}
+        <style>body{{margin:0;padding:4px 0;font-family:"Sarabun",sans-serif;}}</style>
+        </head><body>{html}</body></html>'''
+        components.html(full_html, height=height, scrolling=False)
 
     # ════════════════════════════════════════════════════════
     # Card 2 — Layer Structure
@@ -1033,15 +1043,19 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
               <td class="cmp-ltd-c" style="font-size:13px">{tot_c} ซม.</td>
             </tr>'''
 
-            st.markdown(f'''
+            n_layer_rows = len(all_names) + 2  # +header +total
+            layer_height = n_layer_rows * 30 + 60
+            layer_full = f'''<!DOCTYPE html><html><head>
+            <style>body{{margin:0;padding:0;font-family:"Sarabun",sans-serif;}}</style>
+            </head><body>
+            {TABLE_CSS}
             <table class="cmp-layer-table">
-              <thead>
-                <tr>
-                  <th class="cmp-lth-no">#</th>
-                  <th class="cmp-lth-mat">วัสดุ</th>
-                  <th class="cmp-lth-j">◻ JPCP (ซม.)</th>
-                  <th class="cmp-lth-c">◻ CRCP (ซม.)</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th class="cmp-lth-no">#</th>
+                <th class="cmp-lth-mat">วัสดุ</th>
+                <th class="cmp-lth-j">◻ JPCP (ซม.)</th>
+                <th class="cmp-lth-c">◻ CRCP (ซม.)</th>
+              </tr></thead>
               <tbody>{rows_html}</tbody>
-            </table>''', unsafe_allow_html=True)
+            </table></body></html>'''
+            components.html(layer_full, height=layer_height, scrolling=False)
