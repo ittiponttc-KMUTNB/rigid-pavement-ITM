@@ -738,10 +738,10 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
 
     # ── Project info ─────────────────────────────────────────
     pdf.set_xy(10, 18)
-    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_font('Sarabun', 'B', 11)
     pdf.set_text_color(21, 101, 192)
     pdf.cell(0, 7, f'Project: {proj_name or "(ไม่ระบุชื่อโครงการ)"}', ln=True)
-    pdf.set_font('Helvetica', '', 9)
+    pdf.set_font('Sarabun', '', 9)
     pdf.set_text_color(100, 100, 100)
     pdf.cell(0, 5, f'Date: {date_str}', ln=True)
     pdf.set_text_color(0, 0, 0)
@@ -750,7 +750,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
     # ── helper: section header ────────────────────────────────
     def sec_header(title):
         pdf.set_fill_color(238, 242, 247)
-        pdf.set_font('Helvetica', 'B', 8)
+        pdf.set_font('Sarabun', 'B', 8)
         pdf.set_text_color(84, 110, 122)
         pdf.cell(0, 6, f'  {title}', ln=True, fill=True)
         pdf.set_text_color(0, 0, 0)
@@ -760,7 +760,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
     W_COL   = 95
 
     def tbl_header():
-        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_font('Sarabun', 'B', 9)
         pdf.set_fill_color(21, 101, 192)
         pdf.set_text_color(255, 255, 255)
         pdf.cell(W_LABEL, 7, 'รายการ', border=0, fill=True)
@@ -772,12 +772,12 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
 
     def tbl_row(label, val_j, val_c, shade=False, bold_val=False):
         pdf.set_fill_color(250, 250, 250) if shade else pdf.set_fill_color(255, 255, 255)
-        pdf.set_font('Helvetica', '', 8)
+        pdf.set_font('Sarabun', '', 8)
         pdf.set_text_color(84, 110, 122)
         pdf.cell(W_LABEL, 6, f'  {label}', border='B', fill=True)
         pdf.set_text_color(26, 35, 126)
         f = 'B' if bold_val else ''
-        pdf.set_font('Helvetica', f, 9)
+        pdf.set_font('Sarabun', f, 9)
         pdf.cell(W_COL, 6, f'  {val_j}', border='B', fill=True)
         pdf.set_text_color(27, 94, 32)
         pdf.cell(W_COL, 6, f'  {val_c}', border='B', fill=True, ln=True)
@@ -785,11 +785,11 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
 
     def tbl_row_shared(label, val):
         pdf.set_fill_color(255, 255, 255)
-        pdf.set_font('Helvetica', '', 8)
+        pdf.set_font('Sarabun', '', 8)
         pdf.set_text_color(84, 110, 122)
         pdf.cell(W_LABEL, 6, f'  {label}', border='B', fill=True)
         pdf.set_text_color(100, 100, 100)
-        pdf.set_font('Helvetica', 'I', 8)
+        pdf.set_font('Sarabun', '', 8)
         pdf.cell(W_COL * 2, 6, f'  {val}  [ร่วมกัน]', border='B', fill=True, ln=True)
         pdf.set_text_color(0, 0, 0)
 
@@ -810,7 +810,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
 
     # ── Layer Structure Table ─────────────────────────────────
     if layers_j or layers_c:
-        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_font('Sarabun', 'B', 9)
         pdf.set_fill_color(21, 101, 192)
         pdf.set_text_color(255, 255, 255)
         W_NO  = 12
@@ -825,7 +825,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         pdf.set_text_color(0, 0, 0)
 
         # แผ่นคอนกรีต
-        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_font('Sarabun', 'B', 9)
         pdf.set_fill_color(238, 242, 247)
         pdf.set_text_color(21, 101, 192)
         pdf.cell(W_NO,  6, '0',                      border='B', fill=True)
@@ -852,7 +852,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
             tc = _thick(layers_c, name)
             if tj: tot_j += tj
             if tc: tot_c += tc
-            pdf.set_font('Helvetica', '', 8)
+            pdf.set_font('Sarabun', '', 8)
             pdf.set_fill_color(255, 255, 255)
             pdf.set_text_color(100, 100, 100)
             pdf.cell(W_NO, 6, str(i), border='B', fill=True)
@@ -865,7 +865,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
             pdf.set_text_color(0, 0, 0)
 
         # total row
-        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_font('Sarabun', 'B', 9)
         pdf.set_fill_color(240, 244, 255)
         pdf.set_text_color(0, 0, 0)
         pdf.cell(W_NO,  6, '',                      border='B', fill=True)
