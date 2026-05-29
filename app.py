@@ -54,32 +54,37 @@ html, body, [data-testid="stAppViewContainer"] {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px; color: #FFFFFF;
 }
-/* ── Cards — Style B: left border accent ── */
-.rp-card {
-    background: #FFFFFF;
-    border: 0.5px solid #E0E0E0;
-    border-left: 4px solid #1565C0;
-    border-radius: 0 8px 8px 0;
-    padding: 10px 14px;
-    margin-bottom: 8px;
+
+/* ── st.container(border=True) → style เป็น rp-card ── */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #FFFFFF !important;
+    border: 0.5px solid #E0E0E0 !important;
+    border-left: 4px solid #1565C0 !important;
+    border-radius: 0 8px 8px 0 !important;
+    padding: 2px 6px !important;
+    margin-bottom: 8px !important;
 }
+
+/* ── Card title (ใช้ใน _card_title helper) ── */
 .rp-card-title {
     font-size: 13px; font-weight: 600; color: #1565C0;
     margin-bottom: 10px; padding-bottom: 6px;
     border-bottom: 0.5px solid #E0E0E0;
 }
+
 /* ── Metrics ── */
 .rp-metric {
-    background: #FFF3CD;
-    border: 1px solid #FFECB3;
+    background: #E3F2FD;
+    border: 0.5px solid #90CAF9;
     border-radius: 8px;
     padding: 8px 10px; text-align: center;
 }
-.rp-metric-label { font-size: 11px; color: #90A4AE; margin-bottom: 3px; }
+.rp-metric-label { font-size: 11px; color: #546E7A; margin-bottom: 3px; }
 .rp-metric-val {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 18px; font-weight: 600; color: #1565C0;
 }
+
 /* ── Status ── */
 .rp-status-ok {
     background: #E8F5E9; border: 1px solid #A5D6A7;
@@ -96,6 +101,7 @@ html, body, [data-testid="stAppViewContainer"] {
     border-radius: 8px; padding: 7px 12px;
     font-size: 13px; color: #1565C0;
 }
+
 /* ── Tabs ── */
 div[data-testid="stTabs"] button {
     font-weight: 600 !important; color: #546E7A !important;
@@ -105,6 +111,7 @@ div[data-testid="stTabs"] button[aria-selected="true"] {
     color: #1565C0 !important;
     border-bottom: 3px solid #1565C0 !important;
 }
+
 /* ── Section label ── */
 .rp-section-label {
     font-size: 11px; font-weight: 600; color: #90A4AE;
