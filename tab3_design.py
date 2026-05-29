@@ -716,8 +716,8 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
             self.set_font('Sarabun', 'B', 13)
             self.set_fill_color(21, 101, 192)
             self.set_text_color(255, 255, 255)
-            self.rect(0, 0, 210, 14, 'F')
-            self.set_xy(10, 3)
+            self.rect(0, 8, 210, 14, 'F')
+            self.set_xy(10, 11)
             self.cell(0, 8, 'Rigid Pavement Design - AASHTO 1993  |  KMUTNB', align='L')
             self.set_text_color(0, 0, 0)
 
@@ -737,7 +737,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
     pdf.set_auto_page_break(auto=True, margin=12)
 
     # ── Project info ─────────────────────────────────────────
-    pdf.set_xy(10, 18)
+    pdf.set_xy(10, 26)
     pdf.set_font('Sarabun', 'B', 11)
     pdf.set_text_color(21, 101, 192)
     pdf.cell(0, 7, f'Project: {proj_name or "(ไม่ระบุชื่อโครงการ)"}', ln=True)
@@ -790,7 +790,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         pdf.cell(W_LABEL, 5, f'  {label}', border='B', fill=True)
         pdf.set_text_color(100, 100, 100)
         pdf.set_font('Sarabun', '', 8)
-        pdf.cell(W_COL * 2, 5, f'  {val}  [ร่วมกัน]', border='B', fill=True, ln=True)
+        pdf.cell(W_COL * 2, 5, f'{val}  [ร่วมกัน]', border='B', fill=True, ln=True, align='C')
         pdf.set_text_color(0, 0, 0)
 
     # ── Comparison Table ─────────────────────────────────────
@@ -814,8 +814,8 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         pdf.set_fill_color(21, 101, 192)
         pdf.set_text_color(255, 255, 255)
         W_NO  = 10
-        W_MAT = 100
-        W_LC  = 40
+        W_MAT = 115
+        W_LC  = 32
         pdf.cell(W_NO,  6, '#',               border=0, fill=True)
         pdf.cell(W_MAT, 6, '  วัสดุ',         border=0, fill=True)
         pdf.set_fill_color(21, 101, 192)
@@ -857,7 +857,7 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
             pdf.set_text_color(100, 100, 100)
             pdf.cell(W_NO, 6, str(i), border='B', fill=True)
             pdf.set_text_color(84, 110, 122)
-            pdf.cell(W_MAT, 6, f'  {name[:55]}', border='B', fill=True)
+            pdf.cell(W_MAT, 6, f'  {name[:65]}', border='B', fill=True)
             pdf.set_text_color(26, 35, 126)
             pdf.cell(W_LC, 6, f'  {tj if tj else "-"}', border='B', fill=True)
             pdf.set_text_color(27, 94, 32)
@@ -1265,7 +1265,8 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
             try:
                 pdf_buf = _create_pdf_summary(proj_name, date_str, secs, lj, lc, dj, dc)
                 if pdf_buf:
-                    fname = f'Summary_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf'
+                    proj_slug = proj_name.replace(' ', '_')[:20] if proj_name != '(ไม่ระบุชื่อโครงการ)' else 'NoName'
+                    fname = f'Summary_{proj_slug}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf'
                     st.download_button(
                         '📥 Download PDF Summary', pdf_buf, fname,
                         'application/pdf', key='dl_pdf_summary',
