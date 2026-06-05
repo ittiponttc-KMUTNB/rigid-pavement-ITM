@@ -992,6 +992,18 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
         passed_j  = rj.get('passed')   if rj  else None
         passed_c  = rc_.get('passed')  if rc_ else None
 
+        # ── pre-format ก่อนเข้า f-string เพื่อหลีกเลี่ยง double-brace bug ──
+        w18_req_j_s = f'{w18_req_j:,.0f}' if w18_req_j is not None else '—'
+        w18_req_c_s = f'{w18_req_c:,.0f}' if w18_req_c is not None else '—'
+        w18_cap_j_s = f'{w18_cap_j:,.0f}' if w18_cap_j is not None else '—'
+        w18_cap_c_s = f'{w18_cap_c:,.0f}' if w18_cap_c is not None else '—'
+        ratio_j_s   = f'×{ratio_j:.2f}'   if ratio_j   is not None else '—'
+        ratio_c_s   = f'×{ratio_c:.2f}'   if ratio_c   is not None else '—'
+        kj_eff_s    = f'{kj_eff:.0f}'     if kj_eff    is not None else '—'
+        kc_eff_s    = f'{kc_eff:.0f}'     if kc_eff    is not None else '—'
+        kj_opt_s    = f'{kj_opt:.0f}'     if kj_opt    is not None else '—'
+        kc_opt_s    = f'{kc_opt:.0f}'     if kc_opt    is not None else '—'
+
         kj_ok = (kj_eff >= kj_opt) if (kj_eff and kj_opt) else None
         kc_ok = (kc_eff >= kc_opt) if (kc_eff and kc_opt) else None
         dkj   = (kj_eff - kj_opt)  if (kj_eff and kj_opt) else None
@@ -1064,34 +1076,34 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
             </tr>
             <tr>
               <td class="cmp-td-label">W18 required (D แนะนำ)</td>
-              <td class="cmp-td-b">{_val(w18_req_j, '{{:,.0f}}')}</td>
-              <td class="cmp-td-g">{_val(w18_req_c, '{{:,.0f}}')}</td>
+              <td class="cmp-td-b">{w18_req_j_s}</td>
+              <td class="cmp-td-g">{w18_req_c_s}</td>
             </tr>
             <tr>
               <td class="cmp-td-label">W18 capacity</td>
-              <td class="cmp-td-b">{_val(w18_cap_j, '{{:,.0f}}')}
+              <td class="cmp-td-b">{w18_cap_j_s}
                 {_bar(ratio_j, 'cmp-bar-b') if ratio_j else ''}
               </td>
-              <td class="cmp-td-g">{_val(w18_cap_c, '{{:,.0f}}')}
+              <td class="cmp-td-g">{w18_cap_c_s}
                 {_bar(ratio_c, 'cmp-bar-g') if ratio_c else ''}
               </td>
             </tr>
             <tr>
               <td class="cmp-td-label">Ratio (cap / req)</td>
-              <td class="cmp-td-b" style="font-weight:700">×{_val(ratio_j, '{{:.2f}}')}</td>
-              <td class="cmp-td-g" style="font-weight:700">×{_val(ratio_c, '{{:.2f}}')}</td>
+              <td class="cmp-td-b" style="font-weight:700">{ratio_j_s}</td>
+              <td class="cmp-td-g" style="font-weight:700">{ratio_c_s}</td>
             </tr>
 
             <tr class="cmp-shdr"><td colspan="3">3 · k_opt vs k_eff</td></tr>
             <tr>
               <td class="cmp-td-label">k_eff (จาก Tab 2)</td>
-              <td class="cmp-td-b">{_val(kj_eff)} pci</td>
-              <td class="cmp-td-g">{_val(kc_eff)} pci</td>
+              <td class="cmp-td-b">{kj_eff_s} pci</td>
+              <td class="cmp-td-g">{kc_eff_s} pci</td>
             </tr>
             <tr>
               <td class="cmp-td-label">k_opt (min required)</td>
-              <td class="cmp-td-b">{_val(kj_opt)} pci</td>
-              <td class="cmp-td-g">{_val(kc_opt)} pci</td>
+              <td class="cmp-td-b">{kj_opt_s} pci</td>
+              <td class="cmp-td-g">{kc_opt_s} pci</td>
             </tr>
             <tr>
               <td class="cmp-td-label">Δk = k_eff − k_opt</td>
