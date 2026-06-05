@@ -706,7 +706,6 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
     BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
     FONT_REG  = os.path.join(BASE_DIR, 'Sarabun-Regular.ttf')
     FONT_BOLD = os.path.join(BASE_DIR, 'Sarabun-Bold.ttf')
-    # fallback — ถ้าไม่มี font ใน BASE_DIR ลองหาใน working dir
     if not os.path.exists(FONT_REG):
         FONT_REG  = 'Sarabun-Regular.ttf'
         FONT_BOLD = 'Sarabun-Bold.ttf'
@@ -869,24 +868,24 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         pdf.set_font('Sarabun', 'B', 9)
         pdf.set_fill_color(240, 244, 255)
         pdf.set_text_color(0, 0, 0)
-        pdf.cell(W_NO,  6, '',                      border='B', fill=True)
+        pdf.cell(W_NO,  6, '',                           border='B', fill=True)
         pdf.cell(W_MAT, 6, '  รวมทั้งหมด (รวมคอนกรีต)', border='B', fill=True)
         pdf.set_text_color(21, 101, 192)
-        pdf.cell(W_LC,  6, f'  {tot_j} ซม.',        border='B', fill=True)
+        pdf.cell(W_LC,  6, f'  {tot_j} ซม.',             border='B', fill=True)
         pdf.set_text_color(46, 125, 50)
-        pdf.cell(W_LC,  6, f'  {tot_c} ซม.',        border='B', fill=True, ln=True)
+        pdf.cell(W_LC,  6, f'  {tot_c} ซม.',             border='B', fill=True, ln=True)
 
-    from io import BytesIO
-    buf = BytesIO(pdf.output())
+    from io import BytesIO as _BytesIO
+    buf = _BytesIO(pdf.output())
     buf.seek(0)
     return buf
 
 
 # ============================================================
-# Comparison Table — เพิ่มท้าย render_tab3 (เรียกจากข้างนอก)
+# Comparison Table — เรียกจาก render_tab3
 # ============================================================
 def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
-    """แสดง comparison table JPCP vs CRCP — 2 cards"""
+    """แสดง comparison table JPCP vs CRCP"""
 
     pj = st.session_state.get('jpcp_design_params', {})
     pc = st.session_state.get('crcp_design_params', {})
@@ -894,6 +893,10 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
     kc_eff  = st.session_state.get('crcp_k_eff')
     kj_opt  = pj.get('k_opt')
     kc_opt  = pc.get('k_opt')
+    # ── เพิ่ม CBR และ MR_psi ─────────────────────────────────
+    cbr     = st.session_state.get('cbr', 4.0)
+    MR_psi  = st.session_state.get('MR_psi', 6000)
+    # ─────────────────────────────────────────────────────────
     dj_cm   = st.session_state.get('jpcp_rec_d_cm')
     dc_cm   = st.session_state.get('crcp_rec_d_cm')
     rows_j  = st.session_state.get('jpcp_design_rows', [])
@@ -904,14 +907,13 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
     if not (res_j or res_c):
         return
 
-    # ── helper: หา row ของ D แนะนำ ──────────────────────────
     def _get_row(rows, d_cm):
         return next((r for r in rows if r['d_cm'] == d_cm), None)
 
-    rj = _get_row(rows_j, dj_cm) if dj_cm else None
+    rj  = _get_row(rows_j, dj_cm) if dj_cm else None
     rc_ = _get_row(rows_c, dc_cm) if dc_cm else None
 
-    # ── CSS สำหรับ table ─────────────────────────────────────
+    # ── CSS ──────────────────────────────────────────────────
     TABLE_CSS = """
     <style>
     .cmp-table { width:100%; border-collapse:collapse; font-size:12px; }
@@ -952,7 +954,6 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
     """
     st.markdown(TABLE_CSS, unsafe_allow_html=True)
 
-    # ── helper: badge ────────────────────────────────────────
     def _badge(ok):
         if ok is None: return '<span style="color:#90A4AE">—</span>'
         cls = 'cmp-badge-ok' if ok else 'cmp-badge-fail'
@@ -967,7 +968,7 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
         return (f'<div class="cmp-bar-wrap">'
                 f'<div class="{color_class}" style="width:{w:.0f}%"></div></div>')
 
-    dpsi = 4.5 - pt
+    dpsi  = 4.5 - pt
     dj_in = round(dj_cm / 2.54) if dj_cm else '—'
     dc_in = round(dc_cm / 2.54) if dc_cm else '—'
 
@@ -982,21 +983,19 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
         jj = pj.get('j', '—')
         jc = pc.get('j', '—')
 
-        # W18 req ของ D แนะนำ
-        w18_req_j = rj.get('w18_req') if rj else None
+        w18_req_j = rj.get('w18_req')  if rj  else None
         w18_req_c = rc_.get('w18_req') if rc_ else None
-        w18_cap_j = rj.get('w18_cap') if rj else None
+        w18_cap_j = rj.get('w18_cap')  if rj  else None
         w18_cap_c = rc_.get('w18_cap') if rc_ else None
-        ratio_j   = rj.get('ratio') if rj else None
-        ratio_c   = rc_.get('ratio') if rc_ else None
-        passed_j  = rj.get('passed') if rj else None
-        passed_c  = rc_.get('passed') if rc_ else None
+        ratio_j   = rj.get('ratio')    if rj  else None
+        ratio_c   = rc_.get('ratio')   if rc_ else None
+        passed_j  = rj.get('passed')   if rj  else None
+        passed_c  = rc_.get('passed')  if rc_ else None
 
-        # k_opt check
         kj_ok = (kj_eff >= kj_opt) if (kj_eff and kj_opt) else None
         kc_ok = (kc_eff >= kc_opt) if (kc_eff and kc_opt) else None
-        dkj = (kj_eff - kj_opt) if (kj_eff and kj_opt) else None
-        dkc = (kc_eff - kc_opt) if (kc_eff and kc_opt) else None
+        dkj   = (kj_eff - kj_opt)  if (kj_eff and kj_opt) else None
+        dkc   = (kc_eff - kc_opt)  if (kc_eff and kc_opt) else None
 
         overall_j = (passed_j and kj_ok) if (passed_j is not None and kj_ok is not None) else None
         overall_c = (passed_c and kc_ok) if (passed_c is not None and kc_ok is not None) else None
@@ -1042,6 +1041,14 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
               <td class="cmp-td-label">ZR / So</td>
               <td class="cmp-td-shared" colspan="2">{zr:.3f} / {so:.2f} {shared}</td>
             </tr>
+            <tr>
+              <td class="cmp-td-label">CBR (subgrade)</td>
+              <td class="cmp-td-shared" colspan="2">{cbr:.1f} % {shared}</td>
+            </tr>
+            <tr>
+              <td class="cmp-td-label">MR (subgrade)</td>
+              <td class="cmp-td-shared" colspan="2">{MR_psi:,.0f} psi {shared}</td>
+            </tr>
 
             <tr class="cmp-shdr"><td colspan="3">2 · ความหนาแผ่นคอนกรีต</td></tr>
             <tr>
@@ -1057,22 +1064,22 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
             </tr>
             <tr>
               <td class="cmp-td-label">W18 required (D แนะนำ)</td>
-              <td class="cmp-td-b">{_val(w18_req_j, '{:,.0f}')}</td>
-              <td class="cmp-td-g">{_val(w18_req_c, '{:,.0f}')}</td>
+              <td class="cmp-td-b">{_val(w18_req_j, '{{:,.0f}}')}</td>
+              <td class="cmp-td-g">{_val(w18_req_c, '{{:,.0f}}')}</td>
             </tr>
             <tr>
               <td class="cmp-td-label">W18 capacity</td>
-              <td class="cmp-td-b">{_val(w18_cap_j, '{:,.0f}')}
+              <td class="cmp-td-b">{_val(w18_cap_j, '{{:,.0f}}')}
                 {_bar(ratio_j, 'cmp-bar-b') if ratio_j else ''}
               </td>
-              <td class="cmp-td-g">{_val(w18_cap_c, '{:,.0f}')}
+              <td class="cmp-td-g">{_val(w18_cap_c, '{{:,.0f}}')}
                 {_bar(ratio_c, 'cmp-bar-g') if ratio_c else ''}
               </td>
             </tr>
             <tr>
               <td class="cmp-td-label">Ratio (cap / req)</td>
-              <td class="cmp-td-b" style="font-weight:700">×{_val(ratio_j, '{:.2f}')}</td>
-              <td class="cmp-td-g" style="font-weight:700">×{_val(ratio_c, '{:.2f}')}</td>
+              <td class="cmp-td-b" style="font-weight:700">×{_val(ratio_j, '{{:.2f}}')}</td>
+              <td class="cmp-td-g" style="font-weight:700">×{_val(ratio_c, '{{:.2f}}')}</td>
             </tr>
 
             <tr class="cmp-shdr"><td colspan="3">3 · k_opt vs k_eff</td></tr>
@@ -1111,17 +1118,21 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
 
           </tbody>
         </table>'''
-        # ── เตรียม sections สำหรับ PDF ─────────────────────
+
+        # ── เตรียม sections สำหรับ PDF ────────────────────────
         dpsi_val = 4.5 - pt
         pdf_sections = [
             ('1 · พารามิเตอร์ออกแบบ', [
-                {'label': "f'c (cube)",    'val_j': f'{fc_cube:.0f} ksc',          'shared': True},
-                {'label': 'Ec',             'val_j': f'{ec_psi:,.0f} psi',           'shared': True},
-                {'label': 'Sc (ทล. lock)',  'val_j': f'{SC_FIXED:.0f} psi',          'shared': True},
-                {'label': 'J',              'val_j': str(jj), 'val_c': str(jc)},
-                {'label': 'Cd',             'val_j': f'{cd:.1f}',                    'shared': True},
-                {'label': 'Pt / DPSI',      'val_j': f'{pt:.1f} / {dpsi_val:.1f}',  'shared': True},
-                {'label': 'ZR / So',        'val_j': f'{zr:.3f} / {so:.2f}',        'shared': True},
+                {'label': "f'c (cube)",    'val_j': f'{fc_cube:.0f} ksc',         'shared': True},
+                {'label': 'Ec',            'val_j': f'{ec_psi:,.0f} psi',          'shared': True},
+                {'label': 'Sc (ทล. lock)', 'val_j': f'{SC_FIXED:.0f} psi',         'shared': True},
+                {'label': 'J',             'val_j': str(jj), 'val_c': str(jc)},
+                {'label': 'Cd',            'val_j': f'{cd:.1f}',                   'shared': True},
+                {'label': 'Pt / DPSI',     'val_j': f'{pt:.1f} / {dpsi_val:.1f}', 'shared': True},
+                {'label': 'ZR / So',       'val_j': f'{zr:.3f} / {so:.2f}',       'shared': True},
+                # ── เพิ่ม CBR และ MR ──────────────────────────
+                {'label': 'CBR',           'val_j': f'{cbr:.1f} %',               'shared': True},
+                {'label': 'MR (subgrade)', 'val_j': f'{MR_psi:,.0f} psi',         'shared': True},
             ]),
             ('2 · ความหนาแผ่นคอนกรีต', [
                 {'label': 'D แนะนำ',
@@ -1161,15 +1172,15 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
                  'bold': True, 'shade': True},
             ]),
         ]
-        st.session_state['_pdf_sections']  = pdf_sections
-        st.session_state['_pdf_layers_j']  = layers_j
-        st.session_state['_pdf_layers_c']  = layers_c
-        st.session_state['_pdf_dj_cm']     = dj_cm
-        st.session_state['_pdf_dc_cm']     = dc_cm
+        st.session_state['_pdf_sections'] = pdf_sections
+        st.session_state['_pdf_layers_j'] = layers_j
+        st.session_state['_pdf_layers_c'] = layers_c
+        st.session_state['_pdf_dj_cm']    = dj_cm
+        st.session_state['_pdf_dc_cm']    = dc_cm
 
-        # render ผ่าน components.html (iframe) — รองรับ <table> เต็มรูปแบบ
-        n_rows = 7 + 4 + 3 + 3
-        height = n_rows * 32 + 140
+        # render ผ่าน components.html
+        n_rows   = 9 + 4 + 3 + 3   # section 1 เพิ่ม 2 rows (CBR + MR)
+        height   = n_rows * 32 + 140
         full_html = f'''<!DOCTYPE html><html><head>
         <meta charset="utf-8">
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
@@ -1186,10 +1197,9 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
             st.markdown('<div class="rp-card-title">🏗️ โครงสร้างชั้นทาง — ความหนาแต่ละชั้น (ซม.)</div>',
                         unsafe_allow_html=True)
 
-            # รวม layer names จากทั้งสอง
-            names_j = [l['name'] for l in layers_j]
-            names_c = [l['name'] for l in layers_c]
-            all_names = list(dict.fromkeys(names_j + names_c))  # unique preserve order
+            names_j   = [l['name'] for l in layers_j]
+            names_c   = [l['name'] for l in layers_c]
+            all_names = list(dict.fromkeys(names_j + names_c))
 
             def _get_thick(layers, name):
                 for l in layers:
@@ -1198,7 +1208,6 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
                 return None
 
             rows_html = ''
-            # แถว 0: แผ่นคอนกรีต
             rows_html += f'''
             <tr style="background:#EEF2F7">
               <td class="cmp-ltd-no" style="font-weight:700">0</td>
@@ -1207,7 +1216,6 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
               <td class="cmp-ltd-c" style="font-size:14px">{dc_cm or "—"}</td>
             </tr>'''
 
-            # แถว layer
             tot_j = dj_cm or 0
             tot_c = dc_cm or 0
             for i, name in enumerate(all_names, start=1):
@@ -1224,7 +1232,6 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
                   {td_j}{td_c}
                 </tr>'''
 
-            # แถว total
             rows_html += f'''
             <tr class="cmp-total">
               <td class="cmp-ltd-no"></td>
@@ -1233,7 +1240,7 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
               <td class="cmp-ltd-c" style="font-size:13px">{tot_c} ซม.</td>
             </tr>'''
 
-            n_layer_rows = len(all_names) + 2  # +header +total
+            n_layer_rows = len(all_names) + 2
             layer_height = n_layer_rows * 30 + 60
             layer_full = f'''<!DOCTYPE html><html><head>
             <style>body{{margin:0;padding:0;font-family:"Sarabun",sans-serif;}}</style>
@@ -1250,23 +1257,24 @@ def _comparison_table(res_j, res_c, fc_cube, ec_psi, cd, pt, zr, so):
             </table></body></html>'''
             components.html(layer_full, height=layer_height, scrolling=False)
 
-    # ── PDF Export button ────────────────────────────────
+    # ── PDF Export button ─────────────────────────────────────
     st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown('<div class="rp-card-title">📄 Export PDF Summary</div>',
                     unsafe_allow_html=True)
         proj_name = st.session_state.get('project_name', '') or '(ไม่ระบุชื่อโครงการ)'
         date_str  = datetime.now().strftime('%d/%m/%Y %H:%M')
-        secs  = st.session_state.get('_pdf_sections')
-        lj    = st.session_state.get('_pdf_layers_j', [])
-        lc    = st.session_state.get('_pdf_layers_c', [])
-        dj    = st.session_state.get('_pdf_dj_cm')
-        dc    = st.session_state.get('_pdf_dc_cm')
+        secs = st.session_state.get('_pdf_sections')
+        lj   = st.session_state.get('_pdf_layers_j', [])
+        lc   = st.session_state.get('_pdf_layers_c', [])
+        dj   = st.session_state.get('_pdf_dj_cm')
+        dc   = st.session_state.get('_pdf_dc_cm')
         if secs:
             try:
                 pdf_buf = _create_pdf_summary(proj_name, date_str, secs, lj, lc, dj, dc)
                 if pdf_buf:
-                    proj_slug = proj_name.replace(' ', '_')[:20] if proj_name != '(ไม่ระบุชื่อโครงการ)' else 'NoName'
+                    proj_slug = proj_name.replace(' ', '_')[:20] \
+                        if proj_name != '(ไม่ระบุชื่อโครงการ)' else 'NoName'
                     fname = f'Summary_{proj_slug}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf'
                     st.download_button(
                         '📥 Download PDF Summary', pdf_buf, fname,
