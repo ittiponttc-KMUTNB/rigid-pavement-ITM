@@ -710,15 +710,12 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
         FONT_REG  = 'Sarabun-Regular.ttf'
         FONT_BOLD = 'Sarabun-Bold.ttf'
 
+    # ── ดึง designer name (default '—') ──────────────────────
+    designer = '—'
+
     class PDF(FPDF):
         def header(self):
-            self.set_font('Sarabun', 'B', 13)
-            self.set_fill_color(21, 101, 192)
-            self.set_text_color(255, 255, 255)
-            self.rect(0, 8, 210, 14, 'F')
-            self.set_xy(10, 11)
-            self.cell(0, 8, 'Rigid Pavement Design - AASHTO 1993  |  KMUTNB', align='L')
-            self.set_text_color(0, 0, 0)
+            pass  # ไม่ใช้ auto-header — วาด header เองด้านล่าง
 
         def footer(self):
             self.set_y(-10)
@@ -735,14 +732,51 @@ def _create_pdf_summary(proj_name, date_str, sections, layers_j, layers_c, dj_cm
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=12)
 
-    # ── Project info ─────────────────────────────────────────
-    pdf.set_xy(10, 26)
-    pdf.set_font('Sarabun', 'B', 11)
-    pdf.set_text_color(21, 101, 192)
-    pdf.cell(0, 7, f'Project: {proj_name or "(ไม่ระบุชื่อโครงการ)"}', ln=True)
-    pdf.set_font('Sarabun', '', 9)
-    pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 5, f'Date: {date_str}', ln=True)
+    # ══════════════════════════════════════════════════════════
+    # Header — Flexible style, สีน้ำเงิน
+    # ══════════════════════════════════════════════════════════
+    BLUE      = (21, 101, 192)   # #1565C0
+    PAGE_W    = 190              # usable width (A4 210 - margin 10*2)
+    H_TOP     = 10               # y เริ่มต้น header
+    COL_R_W   = 55               # ความกว้างคอลัมน์ขวา (ผู้ออกแบบ/วันที่)
+    COL_L_W   = PAGE_W - COL_R_W
+
+    # ── ซ้าย: ชื่อรายงาน ──────────────────────────────────────
+    pdf.set_xy(10, H_TOP)
+    pdf.set_font('Sarabun', 'B', 14)
+    pdf.set_text_color(*BLUE)
+    pdf.cell(COL_L_W, 7, 'Rigid Pavement Design Report', ln=False)
+
+    # ── ขวา: ผู้ออกแบบ ────────────────────────────────────────
+    pdf.set_xy(10 + COL_L_W, H_TOP)
+    pdf.set_font('Sarabun', '', 8)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(COL_R_W, 7, f'ผู้ออกแบบ: {designer}', align='R', ln=True)
+
+    # ── ซ้าย: subtitle ────────────────────────────────────────
+    pdf.set_xy(10, H_TOP + 7)
+    pdf.set_font('Sarabun', '', 8)
+    pdf.set_text_color(120, 120, 120)
+    pdf.cell(COL_L_W, 5, 'AASHTO 1993 · ภาควิชาครุศาสตร์โยธา มจพ.', ln=False)
+
+    # ── ขวา: วันที่ ───────────────────────────────────────────
+    pdf.set_xy(10 + COL_L_W, H_TOP + 7)
+    pdf.set_font('Sarabun', '', 8)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(COL_R_W, 5, f'วันที่: {date_str}', align='R', ln=True)
+
+    # ── เส้นคั่นสีน้ำเงิน ────────────────────────────────────
+    pdf.set_draw_color(*BLUE)
+    pdf.set_line_width(0.6)
+    pdf.line(10, H_TOP + 13, 200, H_TOP + 13)
+    pdf.set_line_width(0.2)
+    pdf.set_draw_color(0, 0, 0)
+
+    # ── Project name ──────────────────────────────────────────
+    pdf.set_xy(10, H_TOP + 16)
+    pdf.set_font('Sarabun', 'B', 10)
+    pdf.set_text_color(*BLUE)
+    pdf.cell(0, 6, f'Project: {proj_name or "(ไม่ระบุชื่อโครงการ)"}', ln=True)
     pdf.set_text_color(0, 0, 0)
     pdf.ln(2)
 
